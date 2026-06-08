@@ -58,7 +58,7 @@
                       <%= tx.amount > 0 ? '+' : '' %><%= new Intl.NumberFormat('ru-RU').format(tx.amount) %> ₽
                     </td>
                     <td class="<%= tx.status === 'completed' ? 'status-success' : 'status-pending' %>">
-                      <%= tx.status === 'completed' ? '✅ Выполнен' : '⏳ В обработке' %>
+                      <%= tx.status === 'completed' ? '✅ Выполнен' : (tx.status === 'failed' ? '❌ Отклонён' : '⏳ В обработке') %>
                     </td>
                   </tr>
                 <% }) %>

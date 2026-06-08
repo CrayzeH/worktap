@@ -1,0 +1,73 @@
+<%- include('partials/header', { title: title, currentPath: '/my-bids' }) %>
+
+<main>
+  <div class="container orders-page" style="padding: 40px 0 60px;">
+    <div class="page-header" style="margin-bottom: 32px;">
+      <h1>Мои отклики</h1>
+      <p style="color: #5a6a7e;">Ваши предложения по заказам на бирже: статусы, суммы, сроки и быстрый переход к заказчику.</p>
+    </div>
+
+    <div class="orders-grid" style="display: flex; flex-direction: column; gap: 20px;">
+      <% if (bids && bids.length) { %>
+        <% bids.forEach(bid => { %>
+          <% const statusText = bid.status === 'accepted' ? 'Принят' : bid.status === 'rejected' ? 'Отклонён' : bid.status === 'withdrawn' ? 'Отменён' : 'Ожидает решения'; %>
+          <% const statusBg = bid.status === 'accepted' ? '#1DBF7320' : bid.status === 'rejected' || bid.status === 'withdrawn' ? '#DA4A5420' : '#FBA45720'; %>
+          <% const statusColor = bid.status === 'accepted' ? '#1DBF73' : bid.status === 'rejected' || bid.status === 'withdrawn' ? '#DA4A54' : '#FBA457'; %>
+          <div class="order-card" style="background: white; border-radius: 28px; padding: 24px 28px; border: 1px solid #eef2f6; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 20px;">
+            <div style="flex: 1; min-width: 280px;">
+              <div style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">
+                <a href="/projects/<%= bid.project_id %>" style="color: inherit; text-decoration: none;"><%= bid.title %></a>
+              </div>
+              <div style="color: #5a6a7e; font-size: 14px; margin-bottom: 12px;"><%= bid.description ? bid.description.substring(0, 160) : '' %><%= bid.description && bid.description.length > 160 ? '...' : '' %></div>
+              <div style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: #5a6a7e;">
+                <span><%= bid.category_name %></span>
+                <span>Заказчик: <%= bid.client_name %></span>
+                <span>Бюджет: <%= new Intl.NumberFormat('ru-RU').format(bid.budget || 0) %> ₽</span>
+                <span>Дедлайн: <%= bid.deadline ? new Date(bid.deadline).toLocaleDateString('ru-RU') : 'по договорённости' %></span>
+              </div>
+              <% if (bid.comment) { %>
+                <div style="margin-top: 14px; background:#F7F6FF; border-radius:18px; padding:14px 16px;"><%= bid.comment %></div>
+              <% } %>
+            </div>
+
+            <div style="min-width: 220px; text-align: right;">
+              <div style="font-size: 24px; font-weight: 800; color: #1DBF73;"><%= new Intl.NumberFormat('ru-RU').format(bid.amount || 0) %> ₽</div>
+              <div style="color:#5a6a7e; margin-top:4px;">Срок: <%= bid.delivery_days %> дней</div>
+              <div style="margin-top: 10px; display: inline-block; padding: 5px 12px; border-radius: 40px; font-size: 12px; font-weight: 700; background: <%= statusBg %>; color: <%= statusColor %>;"><%= statusText %></div>
+              <div class="action-row" style="margin-top: 16px; justify-content: flex-end;">
+                <a class="btn-outline action-btn" href="/projects/<%= bid.project_id %>">Открыть заказ</a>
+                <% if (bid.status === 'pending') { %>
+                  <button class="btn-outline action-btn action-btn-danger" onclick="cancelBid(<%= bid.id %>)">Отменить</button>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="empty-state" style="text-align: center; padding: 60px; background: white; border-radius: 32px;">
+          У вас пока нет откликов
+          <br><br>
+          <a href="/market" class="btn-green" style="display: inline-block; margin-top: 16px;">Найти заказ на бирже</a>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  async function cancelBid(id) {
+    if (!confirm('Отменить этот отклик?')) return;
+    const response = await fetch(`/api/bids/${id}/cancel`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'}
+    });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.error || 'Не удалось отменить отклик');
+    }
+  }
+</script>
+
+<%- include('partials/footer') %>

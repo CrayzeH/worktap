@@ -40,8 +40,8 @@
                   <div><%= bid.comment %></div>
                 <% } %>
                 <div style="margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                  <span class="order-status" style="display: inline-block; padding: 4px 12px; border-radius: 40px; font-size: 12px; font-weight: 600; background: <%= bid.status === 'accepted' ? '#1DBF7320' : bid.status === 'rejected' ? '#DA4A5420' : '#FBA45720' %>; color: <%= bid.status === 'accepted' ? '#1DBF73' : bid.status === 'rejected' ? '#DA4A54' : '#FBA457' %>;">
-                    <%= bid.status === 'accepted' ? 'Принят' : bid.status === 'rejected' ? 'Отклонен' : 'Ожидает решения' %>
+                  <span class="order-status" style="display: inline-block; padding: 4px 12px; border-radius: 40px; font-size: 12px; font-weight: 600; background: <%= bid.status === 'accepted' ? '#1DBF7320' : (bid.status === 'rejected' || bid.status === 'withdrawn') ? '#DA4A5420' : '#FBA45720' %>; color: <%= bid.status === 'accepted' ? '#1DBF73' : (bid.status === 'rejected' || bid.status === 'withdrawn') ? '#DA4A54' : '#FBA457' %>;">
+                    <%= bid.status === 'accepted' ? 'Принят' : bid.status === 'rejected' ? 'Отклонен' : bid.status === 'withdrawn' ? 'Отменен исполнителем' : 'Ожидает решения' %>
                   </span>
                   <% if (isOwner && project.status === 'open' && bid.status === 'pending') { %>
                     <button class="btn-outline" onclick="acceptBid(<%= project.id %>, <%= bid.id %>)">Выбрать исполнителя</button>
@@ -79,7 +79,10 @@
             <% } else if (project.status !== 'open') { %>
               <button class="btn-write" disabled style="opacity: 0.6;">Проект закрыт</button>
             <% } else if (userBid) { %>
-              <button class="btn-write" disabled style="opacity: 0.7;">Вы уже откликнулись</button>
+              <button class="btn-write" disabled style="opacity: 0.7;"><%= userBid.status === 'accepted' ? 'Ваш отклик принят' : userBid.status === 'rejected' ? 'Ваш отклик отклонён' : userBid.status === 'withdrawn' ? 'Вы отменили отклик' : 'Вы уже откликнулись' %></button>
+              <% if (userBid.status === 'pending') { %>
+                <button class="btn-outline" onclick="cancelBid(<%= userBid.id %>)" style="width:100%; margin-top:12px;">Отменить отклик</button>
+              <% } %>
             <% } else { %>
               <form id="bidForm" style="margin-top: 18px;">
                 <div class="form-group" style="margin-bottom: 14px;">
@@ -142,6 +145,20 @@
       window.location.reload();
     } else {
       alert(data.error || 'Не удалось выбрать исполнителя');
+    }
+  }
+
+  async function cancelBid(bidId) {
+    if (!confirm('Отменить ваш отклик?')) return;
+    const response = await fetch(`/api/bids/${bidId}/cancel`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'}
+    });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.error || 'Не удалось отменить отклик');
     }
   }
 </script>

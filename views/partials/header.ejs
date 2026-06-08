@@ -27,6 +27,7 @@
 
             <% if (isFreelancer) { %>
               <a href="/seller/works" class="<%= currentPath === '/seller/works' || currentPath === '/seller/works/new' ? 'active' : '' %>">Мои ворки</a>
+              <a href="/my-bids" class="<%= currentPath === '/my-bids' ? 'active' : '' %>">Мои отклики</a>
               <a href="/seller/orders" class="<%= currentPath === '/seller/orders' ? 'active' : '' %>">Заказы на ворки</a>
             <% } %>
 
@@ -57,6 +58,7 @@
                 <% if (isFreelancer) { %>
                   <a href="/seller/works">Мои ворки</a>
                   <a href="/seller/works/new">Создать ворк</a>
+                  <a href="/my-bids">Мои отклики</a>
                   <a href="/seller/orders">Заказы на ворки</a>
                 <% } %>
                 <% if (isAdmin) { %>

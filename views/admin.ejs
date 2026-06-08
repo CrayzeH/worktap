@@ -150,6 +150,7 @@
       <div class="admin-stat">Завершено<strong><%= stats.completed_orders_count || 0 %></strong></div>
       <div class="admin-stat">Оборот<strong><%= new Intl.NumberFormat('ru-RU').format(stats.order_volume || 0) %> ₽</strong></div>
       <div class="admin-stat">Сообщения<strong><%= stats.messages_count || 0 %></strong></div>
+      <div class="admin-stat">Заявки на пополнение<strong><%= stats.pending_deposits_count || 0 %></strong></div>
     </div>
 
     <div class="admin-tabs">
@@ -157,6 +158,7 @@
       <button class="admin-tab" onclick="showAdminPanel('orders')">Заказы</button>
       <button class="admin-tab" onclick="showAdminPanel('works')">Ворки</button>
       <button class="admin-tab" onclick="showAdminPanel('projects')">Проекты</button>
+      <button class="admin-tab" onclick="showAdminPanel('deposits')">Пополнения</button>
       <button class="admin-tab" onclick="showAdminPanel('messages')">Сообщения</button>
     </div>
 
@@ -279,6 +281,34 @@
       </div>
     </section>
 
+    <section class="admin-panel" id="panel-deposits">
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>ID</th><th>Пользователь</th><th>Сумма</th><th>Способ</th><th>Текущий баланс</th><th>Дата</th><th>Действия</th></tr></thead>
+          <tbody>
+            <% if (depositRequests && depositRequests.length) { %>
+              <% depositRequests.forEach(item => { %>
+                <tr>
+                  <td><%= item.id %><br><span style="color:#5a6a7e;"><%= item.transaction_hash %></span></td>
+                  <td><strong><%= item.full_name %></strong><br><span style="color:#5a6a7e;"><%= item.email %></span></td>
+                  <td><strong><%= new Intl.NumberFormat('ru-RU').format(item.amount || 0) %> ₽</strong></td>
+                  <td><span class="status-pill"><%= item.payment_method || 'card' %></span></td>
+                  <td><%= new Intl.NumberFormat('ru-RU').format(item.current_balance || 0) %> ₽</td>
+                  <td><%= new Date(item.created_at).toLocaleString('ru-RU') %></td>
+                  <td class="admin-actions">
+                    <button class="mini-btn green" onclick="approveDeposit(<%= item.id %>)">Подтвердить</button>
+                    <button class="mini-btn red" onclick="rejectDeposit(<%= item.id %>)">Отклонить</button>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr><td colspan="7" style="text-align:center; padding:32px;">Активных заявок на пополнение нет</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <section class="admin-panel" id="panel-messages">
       <div class="admin-table-wrap">
         <table class="admin-table">
@@ -332,6 +362,16 @@
     const amount = Number(document.getElementById(`balance-${id}`).value);
     if (!Number.isFinite(amount) || amount === 0) return alert('Введите сумму');
     postJson(`/api/admin/users/${id}/balance`, {amount}).catch(err => alert(err.message));
+  }
+
+  function approveDeposit(id) {
+    if (!confirm('Подтвердить пополнение и начислить деньги на баланс?')) return;
+    postJson(`/api/admin/deposits/${id}/approve`).catch(err => alert(err.message));
+  }
+
+  function rejectDeposit(id) {
+    if (!confirm('Отклонить заявку на пополнение?')) return;
+    postJson(`/api/admin/deposits/${id}/reject`).catch(err => alert(err.message));
   }
 
   function updateOrderStatus(id) {

@@ -89,8 +89,14 @@
               <% if ((project.bids_count || 0) > 0) { %>
                 <div style="margin-top: 6px; color: #1DBF73; font-weight: 700; font-size: 13px;">Уже откликнулись</div>
               <% } %>
-              <% if (project.status === 'open') { %>
-                <a href="/projects/<%= project.id %>" class="btn-green" style="margin-top: 12px; display: inline-block;">Откликнуться</a>
+              <% if (isAuthenticated && user && project.client_id === user.id) { %>
+                <a href="/projects/<%= project.id %>" class="btn-outline" style="margin-top: 12px; display: inline-block;">Ваш заказ</a>
+              <% } else if (project.user_bid_status) { %>
+                <a href="/projects/<%= project.id %>" class="<%= project.user_bid_status === 'accepted' ? 'btn-green' : 'btn-outline' %>" style="margin-top: 12px; display: inline-block;">
+                  <%= project.user_bid_status === 'accepted' ? 'Отклик принят' : project.user_bid_status === 'rejected' ? 'Отклик отклонён' : project.user_bid_status === 'withdrawn' ? 'Отклик отменён' : 'Вы откликнулись' %>
+                </a>
+              <% } else if (project.status === 'open') { %>
+                <a href="/projects/<%= project.id %>" class="btn-green" style="margin-top: 12px; display: inline-block;"><%= isAuthenticated && isFreelancer ? 'Откликнуться' : 'Подробнее' %></a>
               <% } else { %>
                 <button class="btn-outline" disabled style="opacity: 0.5; margin-top: 12px;">Закрыт</button>
               <% } %>

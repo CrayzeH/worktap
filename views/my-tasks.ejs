@@ -66,6 +66,13 @@
     return 'Отменён';
   }
 
+  function bidStatusLabel(status) {
+    if (status === 'accepted') return 'Принят';
+    if (status === 'rejected') return 'Отклонён';
+    if (status === 'withdrawn') return 'Отменён исполнителем';
+    return 'Ожидает решения';
+  }
+
   function showOrderDetails(orderId) {
     const order = ordersData.find(item => item.id === orderId);
     if (!order) return;
@@ -82,9 +89,9 @@
             <div style="color:#5a6a7e; margin-top:8px;">Срок: ${bid.delivery_days} дней</div>
             ${bid.comment ? `<div style="margin-top:8px;">${bid.comment}</div>` : ''}
             <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+              <span class="btn-outline" style="pointer-events:none;">${bidStatusLabel(bid.status)}</span>
               <a class="btn-outline" href="/messages?user=${bid.freelancer_id}">Написать</a>
               ${order.status === 'open' && bid.status === 'pending' ? `<button class="btn-green" onclick="acceptBid(${order.id}, ${bid.id})">Выбрать исполнителя</button>` : ''}
-              ${bid.status === 'accepted' ? '<span class="btn-outline" style="pointer-events:none;">Выбран</span>' : ''}
             </div>
           </div>
         `).join('')

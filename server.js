@@ -242,6 +242,11 @@ db.serialize(() => {
     `);
     db.run(`CREATE INDEX IF NOT EXISTS idx_messages_users_created ON messages(from_user_id, to_user_id, created_at)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_message_attachments_message ON message_attachments(message_id)`);
+    db.all(`PRAGMA table_info(reviews)`, (err, columns) => {
+        if (!err && columns && !columns.some(column => column.name === 'order_id')) {
+            db.run(`ALTER TABLE reviews ADD COLUMN order_id INTEGER`);
+        }
+    });
     db.get('SELECT id FROM users WHERE role = ? LIMIT 1', ['admin'], (err, row) => {
         if (!err && !row) {
             const hash = bcrypt.hashSync('admin123', 10);
@@ -778,7 +783,7 @@ app.get('/market', async (req, res) => {
             FROM projects p
                      JOIN categories c ON p.category_id = c.id
                      JOIN users u ON p.client_id = u.id
-                     LEFT JOIN bids b ON b.project_id = p.id
+                     LEFT JOIN bids b ON b.project_id = p.id AND b.status != 'withdrawn'
             WHERE 1 = 1
         `;
         const params = [];
@@ -816,6 +821,22 @@ app.get('/market', async (req, res) => {
                 resolve(rows || []);
             });
         });
+
+        if (req.session.user && roleAllows(req.session.user, ['freelancer']) && projects.length) {
+            const projectIds = projects.map(project => project.id);
+            const placeholders = projectIds.map(() => '?').join(',');
+            const userBids = await new Promise((resolve) => {
+                db.all(`
+                    SELECT project_id, status
+                    FROM bids
+                    WHERE freelancer_id = ? AND project_id IN (${placeholders})
+                `, [req.session.user.id, ...projectIds], (err, rows) => resolve(rows || []));
+            });
+            const bidStatusByProject = new Map(userBids.map(bid => [Number(bid.project_id), bid.status]));
+            projects.forEach(project => {
+                project.user_bid_status = bidStatusByProject.get(Number(project.id)) || null;
+            });
+        }
 
         const total = await new Promise((resolve) => {
             let countQuery = `SELECT COUNT(*) as count
@@ -1128,7 +1149,7 @@ app.get('/my-tasks', async (req, res) => {
                     FROM bids b
                              JOIN users u ON b.freelancer_id = u.id
                     WHERE b.project_id = ?
-                    ORDER BY b.amount
+                    ORDER BY b.status = 'accepted' DESC, b.status = 'pending' DESC, b.amount ASC
                 `, [order.id], (err, rows) => {
                     resolve(rows || []);
                 });
@@ -1146,6 +1167,42 @@ app.get('/my-tasks', async (req, res) => {
 });
 
 // Профиль
+app.get('/my-bids', async (req, res) => {
+    if (!requireRolePage(req, res, ['freelancer'])) return;
+
+    try {
+        const freelancerId = req.session.user.id;
+        const bids = await new Promise((resolve) => {
+            db.all(`
+                SELECT b.*,
+                       p.title,
+                       p.description,
+                       p.budget,
+                       p.deadline,
+                       p.status as project_status,
+                       p.selected_freelancer_id,
+                       c.name as category_name,
+                       u.full_name as client_name
+                FROM bids b
+                         JOIN projects p ON p.id = b.project_id
+                         JOIN categories c ON c.id = p.category_id
+                         JOIN users u ON u.id = p.client_id
+                WHERE b.freelancer_id = ?
+                ORDER BY b.created_at DESC
+            `, [freelancerId], (err, rows) => resolve(rows || []));
+        });
+
+        res.render('my-bids', {
+            bids,
+            title: 'Мои отклики — Ворк.Тап',
+            currentPath: '/my-bids'
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Ошибка сервера');
+    }
+});
+
 app.get('/profile/:id?', async (req, res) => {
     const userId = req.params.id || (req.session.user ? req.session.user.id : null);
 
@@ -1659,11 +1716,32 @@ app.post('/api/projects/:id/bids', async (req, res) => {
         if (project.client_id === freelancerId) return res.status(400).json({error: 'Нельзя откликнуться на свой проект'});
 
         const existingBid = await new Promise((resolve) => {
-            db.get('SELECT id FROM bids WHERE project_id = ? AND freelancer_id = ?', [projectId, freelancerId], (err, row) => resolve(row));
+            db.get('SELECT id, status FROM bids WHERE project_id = ? AND freelancer_id = ?', [projectId, freelancerId], (err, row) => resolve(row));
         });
 
-        if (existingBid) {
+        if (existingBid && existingBid.status !== 'withdrawn') {
             return res.status(400).json({error: 'Вы уже откликались на этот проект'});
+        }
+
+        if (existingBid && existingBid.status === 'withdrawn') {
+            await new Promise((resolve, reject) => {
+                db.run(`
+                    UPDATE bids
+                    SET amount = ?,
+                        delivery_days = ?,
+                        comment = ?,
+                        status = 'pending',
+                        created_at = datetime('now')
+                    WHERE id = ?
+                `, [amount, delivery_days, comment || null, existingBid.id], (err) => err ? reject(err) : resolve());
+            });
+
+            db.run(`
+                INSERT INTO notifications (user_id, type, title, message, link, created_at)
+                VALUES (?, 'bid_new', 'Новый отклик', 'Исполнитель заново оставил отклик на ваш проект', ?, datetime('now'))
+            `, [project.client_id, `/projects/${projectId}`]);
+
+            return res.json({success: true, bidId: existingBid.id});
         }
 
         const bidId = await new Promise((resolve, reject) => {
@@ -1688,6 +1766,25 @@ app.post('/api/projects/:id/bids', async (req, res) => {
     }
 });
 
+app.post('/api/bids/:id/cancel', async (req, res) => {
+    if (!requireRoleApi(req, res, ['freelancer'])) return;
+
+    const bidId = req.params.id;
+    const freelancerId = req.session.user.id;
+
+    db.run(`
+        UPDATE bids
+        SET status = 'withdrawn'
+        WHERE id = ? AND freelancer_id = ? AND status = 'pending'
+    `, [bidId, freelancerId], function (err) {
+        if (err) return res.status(500).json({error: err.message});
+        if (this.changes !== 1) {
+            return res.status(400).json({error: 'Можно отменить только свой ожидающий отклик'});
+        }
+        res.json({success: true});
+    });
+});
+
 app.post('/api/projects/:projectId/bids/:bidId/accept', async (req, res) => {
     if (!req.session.user) {
         return res.status(401).json({error: 'Требуется авторизация'});
@@ -1708,6 +1805,7 @@ app.post('/api/projects/:projectId/bids/:bidId/accept', async (req, res) => {
 
         if (!bid) return res.status(404).json({error: 'Отклик не найден'});
         if (bid.client_id !== clientId) return res.status(403).json({error: 'Можно выбрать исполнителя только для своего проекта'});
+        if (bid.status !== 'pending') return res.status(400).json({error: 'Этот отклик уже нельзя выбрать'});
         if (bid.project_status !== 'open') return res.status(400).json({error: 'Проект уже в работе или закрыт'});
 
         await new Promise((resolve, reject) => {
@@ -1906,23 +2004,22 @@ app.post('/api/wallet/deposit', (req, res) => {
     const {amount, payment_method} = req.body;
     const userId = req.session.user.id;
     const hash = crypto.randomBytes(16).toString('hex');
+    const depositAmount = Number(amount);
 
-    if (amount < 100) {
+    if (!Number.isFinite(depositAmount) || depositAmount < 100) {
         return res.status(400).json({error: 'Минимальная сумма пополнения 100 ₽'});
     }
 
     db.run(`
         INSERT INTO transactions (user_id, transaction_hash, type, amount, status, payment_method, description,
                                   created_at)
-        VALUES (?, ?, 'deposit', ?, 'completed', ?, 'Пополнение баланса', datetime('now'))
-    `, [userId, hash, amount, payment_method], function (err) {
+        VALUES (?, ?, 'deposit', ?, 'pending', ?, 'Заявка на пополнение баланса', datetime('now'))
+    `, [userId, hash, depositAmount, payment_method || 'card'], function (err) {
         if (err) {
             return res.status(500).json({error: err.message});
         }
 
-        db.run('UPDATE wallets SET balance = balance + ?, updated_at = datetime("now") WHERE user_id = ?', [amount, userId]);
-
-        res.json({success: true, transactionId: this.lastID, hash});
+        res.json({success: true, transactionId: this.lastID, hash, status: 'pending'});
     });
 });
 
@@ -2396,16 +2493,16 @@ app.post('/api/orders/:id/review', async (req, res) => {
     if (!rating || Number(rating) < 1 || Number(rating) > 5) return res.status(400).json({error: 'Оценка должна быть от 1 до 5'});
 
     const existing = await new Promise((resolve) => {
-        db.get('SELECT id FROM reviews WHERE from_user_id = ? AND work_id = ?', [order.buyer_id, order.work_id], (err, row) => resolve(row));
+        db.get('SELECT id FROM reviews WHERE order_id = ?', [order.id], (err, row) => resolve(row));
     });
     if (existing) return res.status(400).json({error: 'Вы уже оставили отзыв по этому заказу'});
 
     try {
         await new Promise((resolve, reject) => {
             db.run(`
-                INSERT INTO reviews (from_user_id, to_user_id, work_id, rating, comment, is_positive, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-            `, [order.buyer_id, order.seller_id, order.work_id, rating, comment || '', Number(rating) >= 4 ? 1 : 0],
+                INSERT INTO reviews (from_user_id, to_user_id, work_id, order_id, rating, comment, is_positive, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            `, [order.buyer_id, order.seller_id, order.work_id, order.id, rating, comment || '', Number(rating) >= 4 ? 1 : 0],
                 (err) => err ? reject(err) : resolve());
         });
 
@@ -2493,7 +2590,7 @@ app.get('/my-orders', async (req, res) => {
                          JOIN works w ON o.work_id = w.id
                          JOIN users u ON w.seller_id = u.id
                          JOIN work_packages wp ON o.package_id = wp.id
-                         LEFT JOIN reviews r ON r.from_user_id = o.buyer_id AND r.work_id = o.work_id
+                         LEFT JOIN reviews r ON r.order_id = o.id OR (r.order_id IS NULL AND r.from_user_id = o.buyer_id AND r.work_id = o.work_id)
                 WHERE o.buyer_id = ?
                 ORDER BY o.created_at DESC
             `, [userId], (err, rows) => {
@@ -2556,7 +2653,8 @@ app.get('/admin', async (req, res) => {
                     (SELECT COUNT(*) FROM orders) as orders_count,
                     (SELECT COUNT(*) FROM orders WHERE status = 'completed') as completed_orders_count,
                     (SELECT COALESCE(SUM(amount), 0) FROM orders WHERE status IN ('paid', 'in_progress', 'delivered', 'completed')) as order_volume,
-                    (SELECT COUNT(*) FROM messages) as messages_count
+                    (SELECT COUNT(*) FROM messages) as messages_count,
+                    (SELECT COUNT(*) FROM transactions WHERE type = 'deposit' AND status = 'pending') as pending_deposits_count
             `, (err, row) => resolve(row || {}));
         });
 
@@ -2629,6 +2727,20 @@ app.get('/admin', async (req, res) => {
             `, (err, rows) => resolve(rows || []));
         });
 
+        const depositRequests = await new Promise((resolve) => {
+            db.all(`
+                SELECT t.id, t.user_id, t.transaction_hash, t.amount, t.status, t.payment_method, t.created_at,
+                       u.full_name, u.email,
+                       COALESCE(w.balance, 0) as current_balance
+                FROM transactions t
+                         JOIN users u ON u.id = t.user_id
+                         LEFT JOIN wallets w ON w.user_id = t.user_id
+                WHERE t.type = 'deposit' AND t.status = 'pending'
+                ORDER BY t.created_at ASC
+                LIMIT 80
+            `, (err, rows) => resolve(rows || []));
+        });
+
         res.render('admin', {
             title: 'Админка — Ворк.Тап',
             currentPath: '/admin',
@@ -2637,7 +2749,8 @@ app.get('/admin', async (req, res) => {
             orders,
             works,
             projects,
-            messages
+            messages,
+            depositRequests
         });
     } catch (err) {
         console.error(err);
@@ -2682,6 +2795,69 @@ app.post('/api/admin/users/:id/balance', (req, res) => {
             INSERT INTO transactions (user_id, transaction_hash, type, amount, status, description, related_entity_type, related_entity_id, created_at)
             VALUES (?, ?, 'admin_adjustment', ?, 'completed', 'Корректировка баланса администратором', 'user', ?, datetime('now'))
         `, [req.params.id, hash, amount, req.params.id]);
+        res.json({success: true});
+    });
+});
+
+app.post('/api/admin/deposits/:id/approve', (req, res) => {
+    if (!requireAdminApi(req, res)) return;
+
+    db.get(`
+        SELECT id, user_id, amount, status
+        FROM transactions
+        WHERE id = ? AND type = 'deposit'
+    `, [req.params.id], (findErr, tx) => {
+        if (findErr) return res.status(500).json({error: findErr.message});
+        if (!tx) return res.status(404).json({error: 'Заявка не найдена'});
+        if (tx.status !== 'pending') return res.status(400).json({error: 'Заявка уже обработана'});
+
+        db.serialize(() => {
+            db.run('BEGIN IMMEDIATE');
+            db.run(`
+                INSERT INTO wallets (user_id, balance, frozen_balance)
+                VALUES (?, ?, 0)
+                ON CONFLICT(user_id) DO UPDATE SET balance = balance + excluded.balance, updated_at = datetime('now')
+            `, [tx.user_id, tx.amount], (walletErr) => {
+                if (walletErr) {
+                    db.run('ROLLBACK');
+                    return res.status(500).json({error: walletErr.message});
+                }
+
+                db.run(`
+                    UPDATE transactions
+                    SET status = 'completed',
+                        description = 'Пополнение баланса подтверждено администратором'
+                    WHERE id = ? AND status = 'pending'
+                `, [tx.id], function (updateErr) {
+                    if (updateErr) {
+                        db.run('ROLLBACK');
+                        return res.status(500).json({error: updateErr.message});
+                    }
+                    if (this.changes !== 1) {
+                        db.run('ROLLBACK');
+                        return res.status(400).json({error: 'Заявка уже обработана'});
+                    }
+                    db.run('COMMIT', (commitErr) => {
+                        if (commitErr) return res.status(500).json({error: commitErr.message});
+                        res.json({success: true});
+                    });
+                });
+            });
+        });
+    });
+});
+
+app.post('/api/admin/deposits/:id/reject', (req, res) => {
+    if (!requireAdminApi(req, res)) return;
+
+    db.run(`
+        UPDATE transactions
+        SET status = 'failed',
+            description = 'Заявка на пополнение отклонена администратором'
+        WHERE id = ? AND type = 'deposit' AND status = 'pending'
+    `, [req.params.id], function (err) {
+        if (err) return res.status(500).json({error: err.message});
+        if (this.changes !== 1) return res.status(404).json({error: 'Активная заявка не найдена'});
         res.json({success: true});
     });
 });
