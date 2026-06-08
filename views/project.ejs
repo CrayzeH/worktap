@@ -1,0 +1,149 @@
+<%- include('partials/header', { title: title, currentPath: '/market' }) %>
+
+<main>
+  <div class="container work-page">
+    <div class="work-grid">
+      <div class="work-main">
+        <div class="work-header">
+          <div class="work-category">📁 <%= project.category_name %></div>
+          <h1><%= project.title %></h1>
+          <div class="work-price"><%= new Intl.NumberFormat('ru-RU').format(project.budget) %> ₽</div>
+          <div class="project-meta" style="display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px;">
+            <span class="meta-item">👤 <%= project.client_name %></span>
+            <span class="meta-item">📅 До <%= project.deadline ? new Date(project.deadline).toLocaleDateString('ru-RU') : 'по договоренности' %></span>
+            <span class="meta-item">💬 Откликов: <%= bids ? bids.length : 0 %></span>
+            <span class="meta-item"><%= project.status === 'open' ? '🟢 Открыт' : project.status === 'in_progress' ? '🟡 В работе' : project.status === 'completed' ? '🔵 Завершен' : '🔴 Отменен' %></span>
+          </div>
+        </div>
+
+        <div class="description-section">
+          <h3>📖 Описание проекта</h3>
+          <div class="description-text">
+            <p><%= project.description %></p>
+          </div>
+        </div>
+
+        <div class="reviews-section">
+          <h3>📋 Предложения исполнителей</h3>
+          <% if (bids && bids.length) { %>
+            <div style="margin-bottom: 16px; color: #1DBF73; font-weight: 700;">На этот заказ уже откликнулись: <%= bids.length %></div>
+          <% } %>
+          <% if (bids && bids.length) { %>
+            <% bids.forEach(bid => { %>
+              <div class="review-item">
+                <div class="review-header">
+                  <span class="review-author"><%= bid.freelancer_name %> <%= bid.rating ? '⭐ ' + bid.rating.toFixed(1) : '' %></span>
+                  <span style="font-weight: 800; color: #1DBF73;"><%= new Intl.NumberFormat('ru-RU').format(bid.amount) %> ₽</span>
+                </div>
+                <div style="color: #5a6a7e; margin-bottom: 8px;">Срок: <%= bid.delivery_days %> дней</div>
+                <% if (bid.comment) { %>
+                  <div><%= bid.comment %></div>
+                <% } %>
+                <div style="margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                  <span class="order-status" style="display: inline-block; padding: 4px 12px; border-radius: 40px; font-size: 12px; font-weight: 600; background: <%= bid.status === 'accepted' ? '#1DBF7320' : bid.status === 'rejected' ? '#DA4A5420' : '#FBA45720' %>; color: <%= bid.status === 'accepted' ? '#1DBF73' : bid.status === 'rejected' ? '#DA4A54' : '#FBA457' %>;">
+                    <%= bid.status === 'accepted' ? 'Принят' : bid.status === 'rejected' ? 'Отклонен' : 'Ожидает решения' %>
+                  </span>
+                  <% if (isOwner && project.status === 'open' && bid.status === 'pending') { %>
+                    <button class="btn-outline" onclick="acceptBid(<%= project.id %>, <%= bid.id %>)">Выбрать исполнителя</button>
+                  <% } %>
+                </div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div class="empty-message" style="padding: 40px;">Пока нет предложений. Будьте первым исполнителем.</div>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="work-sidebar">
+        <div class="author-card">
+          <div class="author-avatar" style="background-image: url('<%= project.client_avatar || '/images/avatar-placeholder.jpg' %>');"></div>
+          <div class="author-name"><%= project.client_name %></div>
+          <div class="author-role">Заказчик</div>
+          <div class="author-stats">
+            <div>Бюджет: <%= new Intl.NumberFormat('ru-RU').format(project.budget) %> ₽</div>
+            <div>Опубликован: <%= new Date(project.created_at).toLocaleDateString('ru-RU') %></div>
+            <% if (project.freelancer_name) { %>
+              <div>Исполнитель: <%= project.freelancer_name %></div>
+            <% } %>
+          </div>
+
+          <% if (!isAuthenticated) { %>
+            <a href="/login" class="btn-write" style="display: block; text-align: center;">Войти, чтобы откликнуться</a>
+          <% } else if (isOwner) { %>
+            <a href="/my-tasks" class="btn-write" style="display: block; text-align: center;">Управлять заказом</a>
+          <% } else { %>
+            <a href="/messages?user=<%= project.client_id %>" class="btn-outline" style="display: block; text-align: center; margin-bottom: 12px;">Написать заказчику</a>
+            <% if (!isFreelancer) { %>
+              <button class="btn-write" disabled style="opacity: 0.6;">Отклики доступны исполнителям</button>
+            <% } else if (project.status !== 'open') { %>
+              <button class="btn-write" disabled style="opacity: 0.6;">Проект закрыт</button>
+            <% } else if (userBid) { %>
+              <button class="btn-write" disabled style="opacity: 0.7;">Вы уже откликнулись</button>
+            <% } else { %>
+              <form id="bidForm" style="margin-top: 18px;">
+                <div class="form-group" style="margin-bottom: 14px;">
+                  <label>Ваша цена</label>
+                  <input type="number" id="bidAmount" min="100" required value="<%= Math.round(project.budget) %>" style="width:100%; padding:12px 16px; border-radius:40px; border:1.5px solid #e2e8f0;">
+                </div>
+                <div class="form-group" style="margin-bottom: 14px;">
+                  <label>Срок, дней</label>
+                  <input type="number" id="bidDays" min="1" required value="7" style="width:100%; padding:12px 16px; border-radius:40px; border:1.5px solid #e2e8f0;">
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                  <label>Комментарий</label>
+                  <textarea id="bidComment" rows="4" placeholder="Коротко опишите, как выполните задачу" style="width:100%; padding:14px 16px; border-radius:20px; border:1.5px solid #e2e8f0; font-family:inherit; resize:vertical; background:#fff;"></textarea>
+                </div>
+                <button type="submit" class="btn-write" style="width: 100%;">Откликнуться</button>
+              </form>
+            <% } %>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const bidForm = document.getElementById('bidForm');
+  if (bidForm) {
+    bidForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = bidForm.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+
+      const response = await fetch('/api/projects/<%= project.id %>/bids', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          amount: Number(document.getElementById('bidAmount').value),
+          delivery_days: Number(document.getElementById('bidDays').value),
+          comment: document.getElementById('bidComment').value
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        window.location.reload();
+      } else {
+        alert(data.error || 'Не удалось отправить отклик');
+        submitBtn.disabled = false;
+      }
+    });
+  }
+
+  async function acceptBid(projectId, bidId) {
+    if (!confirm('Выбрать этого исполнителя для проекта?')) return;
+    const response = await fetch(`/api/projects/${projectId}/bids/${bidId}/accept`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'}
+    });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.error || 'Не удалось выбрать исполнителя');
+    }
+  }
+</script>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,173 @@
+<%- include('partials/header', { title: title, currentPath: '/market' }) %>
+
+<main>
+  <div class="exchange-hero" style="background-image: url('/images/bg.png');">
+  <div class="container">
+    <div class="exchange-title">
+      <h1>Биржа проектов</h1>
+      <p>Найдите идеального исполнителя для вашего проекта или начните зарабатывать</p>
+    </div>
+  </div>
+</div>
+
+  <!-- Фильтры -->
+  <div class="filters-section">
+    <div class="container">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>Категория</label>
+          <div class="category-chips" id="categoryChips">
+            <a href="/market" class="chip <%= !filters.category ? 'active' : '' %>">Все категории</a>
+            <% categories.forEach(cat => { %>
+              <a href="/market?category=<%= cat.id %><%= filters.status ? '&status=' + filters.status : '' %><%= filters.min_budget ? '&min_budget=' + filters.min_budget : '' %><%= filters.max_budget ? '&max_budget=' + filters.max_budget : '' %>"
+                 class="chip <%= filters.category == cat.id ? 'active' : '' %>">
+                <%= cat.name %>
+              </a>
+            <% }) %>
+          </div>
+        </div>
+        <div class="filter-group">
+          <label>Бюджет (₽)</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="number" id="minBudget" class="filter-input" placeholder="от" value="<%= filters.min_budget || '' %>" style="width: 100px;">
+            <input type="number" id="maxBudget" class="filter-input" placeholder="до" value="<%= filters.max_budget || '' %>" style="width: 100px;">
+          </div>
+        </div>
+        <div class="filter-group">
+          <label>Статус</label>
+          <select id="statusFilter" class="filter-select">
+            <option value="all" <%= filters.status === 'all' || !filters.status ? 'selected' : '' %>>Любой статус</option>
+            <option value="open" <%= filters.status === 'open' ? 'selected' : '' %>>Открыт</option>
+            <option value="in_progress" <%= filters.status === 'in_progress' ? 'selected' : '' %>>В работе</option>
+            <option value="completed" <%= filters.status === 'completed' ? 'selected' : '' %>>Завершён</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Поиск</label>
+          <input type="text" id="searchInput" class="filter-input" placeholder="Название проекта..." value="<%= filters.search || '' %>" style="min-width: 200px;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="stats-row">
+      <div class="projects-count-badge">📊 Найдено проектов: <%= total %></div>
+      <div class="sort-buttons">
+        <button class="sort-btn" data-sort="default">По умолчанию</button>
+        <button class="sort-btn" data-sort="price_asc">Цена ↑</button>
+        <button class="sort-btn" data-sort="price_desc">Цена ↓</button>
+      </div>
+    </div>
+
+    <!-- Список проектов -->
+    <div class="projects-grid" id="projectsGrid">
+      <% if (projects && projects.length) { %>
+        <% projects.forEach(project => { %>
+          <div class="project-card" data-budget="<%= project.budget %>">
+            <div class="project-info">
+              <div class="project-title"><%= project.title %></div>
+              <div class="project-desc"><%= project.description.substring(0, 150) %><%= project.description.length > 150 ? '...' : '' %></div>
+              <div class="project-meta">
+                <span class="meta-item">📁 <%= project.category_name %></span>
+                <span class="meta-item">👤 <%= project.client_name %></span>
+                <span class="meta-item">📅 до <%= project.deadline ? new Date(project.deadline).toLocaleDateString('ru-RU') : 'по договоренности' %></span>
+                <span class="meta-item">💬 Откликов: <%= project.bids_count || 0 %></span>
+                <span class="meta-item">
+                  <% if (project.status === 'open') { %>
+                    🟢 Открыт
+                  <% } else if (project.status === 'in_progress') { %>
+                    🟡 В работе
+                  <% } else { %>
+                    🔵 Завершён
+                  <% } %>
+                </span>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div class="project-budget"><%= new Intl.NumberFormat('ru-RU').format(project.budget) %> ₽</div>
+              <% if ((project.bids_count || 0) > 0) { %>
+                <div style="margin-top: 6px; color: #1DBF73; font-weight: 700; font-size: 13px;">Уже откликнулись</div>
+              <% } %>
+              <% if (project.status === 'open') { %>
+                <a href="/projects/<%= project.id %>" class="btn-green" style="margin-top: 12px; display: inline-block;">Откликнуться</a>
+              <% } else { %>
+                <button class="btn-outline" disabled style="opacity: 0.5; margin-top: 12px;">Закрыт</button>
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="empty-message">😕 Проектов не найдено. Попробуйте изменить фильтры.</div>
+      <% } %>
+    </div>
+
+    <!-- Пагинация -->
+    <% if (total > limit) { %>
+      <div class="pagination">
+        <% for (let i = 1; i <= Math.ceil(total / limit); i++) { %>
+          <a href="/market?page=<%= i %><%= filters.category ? '&category=' + filters.category : '' %><%= filters.status && filters.status !== 'all' ? '&status=' + filters.status : '' %><%= filters.min_budget ? '&min_budget=' + filters.min_budget : '' %><%= filters.max_budget ? '&max_budget=' + filters.max_budget : '' %><%= filters.search ? '&search=' + filters.search : '' %>"
+             class="page-link <%= i === currentPage ? 'active' : '' %>">
+            <%= i %>
+          </a>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</main>
+
+<script>
+  // Фильтры
+  const minBudget = document.getElementById('minBudget');
+  const maxBudget = document.getElementById('maxBudget');
+  const statusFilter = document.getElementById('statusFilter');
+  const searchInput = document.getElementById('searchInput');
+
+  function applyFilters() {
+    let url = '/market?';
+    const params = [];
+
+    if (minBudget.value) params.push(`min_budget=${minBudget.value}`);
+    if (maxBudget.value) params.push(`max_budget=${maxBudget.value}`);
+    if (statusFilter.value && statusFilter.value !== 'all') params.push(`status=${statusFilter.value}`);
+    if (searchInput.value) params.push(`search=${encodeURIComponent(searchInput.value)}`);
+
+    window.location.href = url + params.join('&');
+  }
+
+  minBudget.addEventListener('change', applyFilters);
+  maxBudget.addEventListener('change', applyFilters);
+  statusFilter.addEventListener('change', applyFilters);
+
+  let searchTimeout;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(applyFilters, 500);
+  });
+
+  // Сортировка
+  const sortBtns = document.querySelectorAll('.sort-btn');
+  sortBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sort = btn.dataset.sort;
+      const projectsGrid = document.getElementById('projectsGrid');
+      const projects = Array.from(projectsGrid.children);
+
+      projects.sort((a, b) => {
+        const budgetA = parseInt(a.dataset.budget);
+        const budgetB = parseInt(b.dataset.budget);
+
+        if (sort === 'price_asc') return budgetA - budgetB;
+        if (sort === 'price_desc') return budgetB - budgetA;
+        return 0;
+      });
+
+      projects.forEach(project => projectsGrid.appendChild(project));
+
+      sortBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+</script>
+
+<%- include('partials/footer') %>

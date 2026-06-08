@@ -1,0 +1,114 @@
+<%- include('partials/header', { title: title, currentPath: '/create-order' }) %>
+
+<main>
+  <div class="container" style="padding: 40px 0 60px;">
+    <div class="create-order-card" style="max-width: 800px; margin: 0 auto; background: white; border-radius: 32px; padding: 48px; border: 1px solid #eef2f6;">
+      <h1 style="font-size: 32px; margin-bottom: 8px;">Создание заказа</h1>
+      <p style="color: #5a6a7e; margin-bottom: 32px;">Опишите вашу задачу, и фрилансеры предложат свои решения</p>
+
+      <div id="errorMessage" style="background: #fee2e2; color: #dc2626; padding: 12px 20px; border-radius: 40px; margin-bottom: 24px; display: none;"></div>
+
+      <form id="createOrderForm">
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label>Название проекта *</label>
+          <input type="text" id="title" required placeholder="Например: Разработка интернет-магазина" style="width: 100%; padding: 14px 18px; border-radius: 40px; border: 1.5px solid #e2e8f0;">
+        </div>
+
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+          <div class="form-group">
+            <label>Категория *</label>
+            <select id="categoryId" class="filter-select" required style="width: 100%; padding: 14px 18px; border-radius: 40px; border: 1.5px solid #e2e8f0;">
+              <option value="">Выберите категорию</option>
+              <% if (categories && categories.length) { %>
+                <% categories.forEach(cat => { %>
+                  <option value="<%= cat.id %>"><%= cat.name %></option>
+                <% }) %>
+              <% } %>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Бюджет (₽) *</label>
+            <input type="number" id="budget" required placeholder="Например: 50000" min="100" style="width: 100%; padding: 14px 18px; border-radius: 40px; border: 1.5px solid #e2e8f0;">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label>Срок выполнения</label>
+          <input type="date" id="deadline" style="width: 100%; padding: 14px 18px; border-radius: 40px; border: 1.5px solid #e2e8f0;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label>Описание проекта *</label>
+          <textarea id="description" rows="6" required placeholder="Опишите подробно, что нужно сделать, какие требования, технологии..." style="width: 100%; padding: 14px 18px; border-radius: 24px; border: 1.5px solid #e2e8f0; font-family: inherit; resize: vertical;"></textarea>
+        </div>
+
+        <button type="submit" class="btn-green" style="width: 100%; padding: 14px; font-size: 16px;">🚀 Опубликовать заказ</button>
+      </form>
+
+      <div class="info-block" style="margin-top: 32px; padding: 20px; background: #F2F0FE; border-radius: 24px;">
+        <h4 style="margin-bottom: 12px;">💡 Советы по созданию заказа:</h4>
+        <ul style="margin-left: 20px; color: #5a6a7e;">
+          <li>Чем подробнее описание, тем точнее будут предложения</li>
+          <li>Укажите реальный бюджет — это повысит шансы найти хорошего исполнителя</li>
+          <li>Прикрепите примеры работ, которые вам нравятся</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const form = document.getElementById('createOrderForm');
+  const errorDiv = document.getElementById('errorMessage');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = {
+      title: document.getElementById('title').value,
+      category_id: document.getElementById('categoryId').value,
+      budget: parseInt(document.getElementById('budget').value),
+      deadline: document.getElementById('deadline').value,
+      description: document.getElementById('description').value
+    };
+
+    if (!formData.title || !formData.category_id || !formData.budget || !formData.description) {
+      errorDiv.textContent = 'Пожалуйста, заполните все обязательные поля';
+      errorDiv.style.display = 'block';
+      return;
+    }
+
+    errorDiv.style.display = 'none';
+    const submitBtn = form.querySelector('button');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ Публикация...';
+
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert('✅ Заказ успешно создан!');
+        window.location.href = '/my-tasks';
+      } else {
+        errorDiv.textContent = data.error || 'Ошибка создания заказа';
+        errorDiv.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🚀 Опубликовать заказ';
+      }
+    } catch (err) {
+      errorDiv.textContent = 'Ошибка соединения с сервером';
+      errorDiv.style.display = 'block';
+      submitBtn.disabled = false;
+      submitBtn.textContent = '🚀 Опубликовать заказ';
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>

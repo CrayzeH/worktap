@@ -1,0 +1,200 @@
+<%- include('partials/header', { title: title, currentPath: '/wallet' }) %>
+
+<main>
+  <div class="container wallet-page">
+    <div class="wallet-grid">
+      <!-- Левая колонка -->
+      <div class="wallet-left">
+        <div class="balance-card">
+          <div class="balance-label">💰 Доступный баланс</div>
+          <div class="balance-amount"><%= new Intl.NumberFormat('ru-RU').format(wallet.balance || 0) %> <span class="balance-currency">₽</span></div>
+          <div class="balance-actions">
+            <button class="btn-primary" id="topupBtn">💳 Пополнить баланс</button>
+            <button class="btn-secondary" id="withdrawBtn">💸 Вывести средства</button>
+          </div>
+        </div>
+
+        <div class="stats-mini">
+          <div class="stat-row"><span>📊 Заморожено (в сделках):</span><strong><%= new Intl.NumberFormat('ru-RU').format(wallet.frozen_balance || 0) %> ₽</strong></div>
+          <div class="stat-row"><span>⭐ Доступно для вывода:</span><strong><%= new Intl.NumberFormat('ru-RU').format((wallet.balance || 0) - (wallet.frozen_balance || 0)) %> ₽</strong></div>
+          <div class="stat-row"><span>📅 Последняя операция:</span><strong><%= transactions.length > 0 ? new Date(transactions[0].created_at).toLocaleDateString('ru-RU') : '—' %></strong></div>
+        </div>
+      </div>
+
+      <!-- Правая колонка -->
+      <div class="wallet-right">
+        <div class="history-header">
+          <h2>📜 История операций</h2>
+          <div class="filter-group">
+            <select id="typeFilter" class="filter-select">
+              <option value="all">Все операции</option>
+              <option value="deposit">Пополнения</option>
+              <option value="withdraw">Выводы</option>
+              <option value="payment">Оплата услуг</option>
+              <option value="earning">Заработок</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="history-table">
+          <table>
+            <thead>
+              <tr><th>Хеш транзакции</th><th>Дата</th><th>Тип</th><th>Сумма</th><th>Статус</th></tr>
+            </thead>
+            <tbody id="historyBody">
+              <% if (transactions && transactions.length) { %>
+                <% transactions.forEach(tx => { %>
+                  <tr>
+                    <td><span class="hash"><%= tx.transaction_hash || '—' %></span></td>
+                    <td><%= new Date(tx.created_at).toLocaleDateString('ru-RU') %></td>
+                    <td>
+                      <% if (tx.type === 'deposit') { %>💰 Пополнение
+                      <% } else if (tx.type === 'withdraw') { %>💸 Вывод
+                      <% } else if (tx.type === 'payment') { %>💳 Оплата
+                      <% } else { %>⭐ Заработок
+                      <% } %>
+                    </td>
+                    <td class="<%= tx.amount > 0 ? 'amount-positive' : 'amount-negative' %>">
+                      <%= tx.amount > 0 ? '+' : '' %><%= new Intl.NumberFormat('ru-RU').format(tx.amount) %> ₽
+                    </td>
+                    <td class="<%= tx.status === 'completed' ? 'status-success' : 'status-pending' %>">
+                      <%= tx.status === 'completed' ? '✅ Выполнен' : '⏳ В обработке' %>
+                    </td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr><td colspan="5" style="text-align:center; padding:40px;">😕 История операций пуста</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Модальное окно пополнения -->
+<div id="topupModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>💳 Пополнение баланса</h3>
+      <span class="modal-close">&times;</span>
+    </div>
+    <form id="topupForm">
+      <div class="form-group">
+        <label>Сумма пополнения (₽)</label>
+        <input type="number" id="topupAmount" placeholder="от 100 ₽" required min="100" step="100">
+      </div>
+      <div class="form-group">
+        <label>Способ оплаты</label>
+        <select id="paymentMethod" class="filter-select">
+          <option value="card">💳 Банковская карта</option>
+          <option value="paypal">🌐 PayPal</option>
+        </select>
+      </div>
+      <button type="submit" class="modal-btn">Пополнить</button>
+    </form>
+  </div>
+</div>
+
+<!-- Модальное окно вывода -->
+<div id="withdrawModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>💸 Вывод средств</h3>
+      <span class="modal-close">&times;</span>
+    </div>
+    <form id="withdrawForm">
+      <div class="form-group">
+        <label>Сумма вывода (₽)</label>
+        <input type="number" id="withdrawAmount" placeholder="от 500 ₽" required min="500" step="100">
+      </div>
+      <div class="form-group">
+        <label>Реквизиты</label>
+        <input type="text" id="withdrawDetails" placeholder="Номер карты / PayPal" required>
+      </div>
+      <button type="submit" class="modal-btn">Запросить вывод</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Модалки
+  const topupModal = document.getElementById('topupModal');
+  const withdrawModal = document.getElementById('withdrawModal');
+  const topupBtn = document.getElementById('topupBtn');
+  const withdrawBtn = document.getElementById('withdrawBtn');
+  const closeBtns = document.querySelectorAll('.modal-close');
+
+  topupBtn.onclick = () => topupModal.classList.add('active');
+  withdrawBtn.onclick = () => withdrawModal.classList.add('active');
+
+  closeBtns.forEach(btn => {
+    btn.onclick = () => {
+      topupModal.classList.remove('active');
+      withdrawModal.classList.remove('active');
+    };
+  });
+
+  window.onclick = (e) => {
+    if (e.target === topupModal) topupModal.classList.remove('active');
+    if (e.target === withdrawModal) withdrawModal.classList.remove('active');
+  };
+
+  // Пополнение
+  document.getElementById('topupForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const amount = parseInt(document.getElementById('topupAmount').value);
+    const payment_method = document.getElementById('paymentMethod').value;
+
+    if (amount < 100) {
+      alert('Минимальная сумма пополнения 100 ₽');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/wallet/deposit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, payment_method })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`✅ Запрос на пополнение ${amount} ₽ отправлен!`);
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        alert('❌ Ошибка: ' + data.error);
+      }
+    } catch (err) {
+      alert('Ошибка соединения');
+    }
+
+    topupModal.classList.remove('active');
+  };
+
+  // Фильтр транзакций
+  document.getElementById('typeFilter').addEventListener('change', (e) => {
+    const type = e.target.value;
+    const rows = document.querySelectorAll('#historyBody tr');
+
+    rows.forEach(row => {
+      if (type === 'all') {
+        row.style.display = '';
+      } else {
+        const typeText = row.cells[2]?.textContent || '';
+        if ((type === 'deposit' && typeText.includes('Пополнение')) ||
+            (type === 'withdraw' && typeText.includes('Вывод')) ||
+            (type === 'payment' && typeText.includes('Оплата')) ||
+            (type === 'earning' && typeText.includes('Заработок'))) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      }
+    });
+  });
+</script>
+
+<%- include('partials/footer') %>

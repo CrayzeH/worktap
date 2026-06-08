@@ -1,0 +1,144 @@
+<%- include('partials/header', { title: title, currentPath: '/works' }) %>
+
+<main>
+  <div class="container" style="padding: 40px 0 60px;">
+    <div class="section-header" style="margin-bottom: 32px;">
+      <div>
+        <h1>Все ворки</h1>
+        <p style="color: #5a6a7e; margin-top: 8px;">Выберите готовую услугу от проверенных фрилансеров</p>
+      </div>
+      <% if (isAuthenticated && isFreelancer) { %>
+        <a href="/seller/works/new" class="btn-green" style="padding: 12px 28px;">Создать ворк</a>
+      <% } else if (isAuthenticated && isClient) { %>
+        <a href="/create-order" class="btn-green" style="padding: 12px 28px;">Создать заказ</a>
+      <% } %>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="filters-bar" style="background: white; border-radius: 28px; padding: 24px 28px; margin-bottom: 32px; border: 1px solid #eef2f6;">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>Категория</label>
+          <div class="category-chips" id="categoryChips">
+            <a href="/works" class="chip <%= !filters.category ? 'active' : '' %>">Все категории</a>
+            <% if (categories && categories.length) { %>
+              <% categories.forEach(cat => { %>
+                <a href="/works?category=<%= cat.id %><%= filters.search ? '&search=' + filters.search : '' %>"
+                   class="chip <%= filters.category == cat.id ? 'active' : '' %>">
+                  <%= cat.name %>
+                </a>
+              <% }) %>
+            <% } %>
+          </div>
+        </div>
+        <div class="filter-group">
+          <label>Поиск</label>
+          <input type="text" id="searchInput" class="filter-input" placeholder="Название услуги..." value="<%= filters.search || '' %>" style="min-width: 250px;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Сетка ворков -->
+    <div class="cards-grid" id="worksGrid">
+      <% if (works && works.length) { %>
+        <% works.forEach(work => { %>
+          <div class="work-card" data-title="<%= work.title.toLowerCase() %>">
+            <div class="card-avatar" style="background-image: url('<%= work.thumbnail || '/images/avatar-placeholder.jpg' %>');"></div>
+            <div class="work-title"><%= work.title %></div>
+            <div class="work-desc"><%= work.description ? work.description.substring(0, 100) : 'Описание отсутствует' %><%= work.description && work.description.length > 100 ? '...' : '' %></div>
+            <div class="work-price">
+              <% if (work.price) { %>
+                <%= new Intl.NumberFormat('ru-RU').format(work.price) %> ₽
+              <% } else { %>
+                Цена по запросу
+              <% } %>
+            </div>
+            <div class="work-meta" style="margin-bottom: 16px; font-size: 13px; color: #5a6a7e; display: flex; justify-content: space-between;">
+              <span>👤 <%= work.seller_name %></span>
+              <span>⭐ <%= work.seller_rating ? work.seller_rating.toFixed(1) : 'Нов' %></span>
+            </div>
+            <div class="action-row">
+              <a href="/work/<%= work.id %>" class="btn-outline action-btn" style="flex:1;">Подробнее</a>
+              <% if (isAuthenticated) { %>
+                <% const isFav = favoriteWorkIds && favoriteWorkIds.includes(Number(work.id)); %>
+                <button class="btn-outline action-btn favorite-work-btn <%= isFav ? 'is-favorite' : '' %>" data-work-id="<%= work.id %>" onclick="addWorkToFavorites(<%= work.id %>, this)" style="flex:1;"><%= isFav ? 'В избранном' : 'В избранное' %></button>
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="empty-message" style="grid-column: 1/-1; text-align: center; padding: 60px; background: white; border-radius: 28px;">
+          😕 Ворков не найдено
+          <br><br>
+          <% if (isAuthenticated && isFreelancer) { %>
+            <a href="/seller/works/new" class="btn-green" style="display: inline-block;">Создать ворк</a>
+          <% } else if (isAuthenticated && isClient) { %>
+            <a href="/create-order" class="btn-green" style="display: inline-block;">Создать заказ</a>
+          <% } %>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Пагинация -->
+    <% if (total > limit) { %>
+      <div class="pagination">
+        <% for (let i = 1; i <= Math.ceil(total / limit); i++) { %>
+          <a href="/works?page=<%= i %><%= filters.category ? '&category=' + filters.category : '' %><%= filters.search ? '&search=' + filters.search : '' %>"
+             class="page-link <%= i === currentPage ? 'active' : '' %>">
+            <%= i %>
+          </a>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</main>
+
+<script>
+  // Поиск с debounce
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    let timeout;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        const search = searchInput.value;
+        const currentUrl = new URL(window.location.href);
+        if (search) {
+          currentUrl.searchParams.set('search', search);
+        } else {
+          currentUrl.searchParams.delete('search');
+        }
+        currentUrl.searchParams.set('page', '1');
+        window.location.href = currentUrl.toString();
+      }, 500);
+    });
+  }
+
+  function setFavoriteButton(button) {
+    if (!button) return;
+    button.classList.add('is-favorite');
+    button.textContent = 'В избранном';
+    button.style.background = '#1DBF73';
+    button.style.color = 'white';
+    button.style.borderColor = '#1DBF73';
+    button.disabled = true;
+  }
+
+  function addWorkToFavorites(workId, button) {
+    fetch('/api/favorites', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({work_id: workId})
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setFavoriteButton(button);
+        } else {
+          alert(data.error || 'Не удалось добавить в избранное');
+        }
+      });
+  }
+</script>
+
+<%- include('partials/footer') %>

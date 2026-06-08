@@ -1,0 +1,145 @@
+<%- include('partials/header', { title: title, currentPath: '/my-tasks' }) %>
+
+<main>
+  <div class="container orders-page" style="padding: 40px 0 60px;">
+    <div class="page-header" style="margin-bottom: 32px;">
+      <h1>Мои заказы</h1>
+      <p style="color: #5a6a7e;">Проекты, которые вы разместили на бирже: отклики, исполнитель, чат и статусы.</p>
+    </div>
+
+    <div id="ordersList" class="orders-grid" style="display: flex; flex-direction: column; gap: 20px;">
+      <% if (orders && orders.length > 0) { %>
+        <% orders.forEach(order => { %>
+          <div class="order-card" style="background: white; border-radius: 28px; padding: 24px 28px; border: 1px solid #eef2f6; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px;">
+            <div style="flex: 1; min-width: 260px;">
+              <div style="font-size: 20px; font-weight: 700; margin-bottom: 8px;"><%= order.title %></div>
+              <div style="color: #5a6a7e; font-size: 14px; margin-bottom: 12px;"><%= order.description.substring(0, 140) %><%= order.description.length > 140 ? '...' : '' %></div>
+              <div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: #5a6a7e;">
+                <span><%= order.category_name %></span>
+                <span>Срок: <%= order.deadline ? new Date(order.deadline).toLocaleDateString('ru-RU') : 'по договоренности' %></span>
+                <span>Откликов: <%= order.bids ? order.bids.length : 0 %></span>
+                <% if (order.freelancer_name) { %>
+                  <span>Исполнитель: <%= order.freelancer_name %></span>
+                <% } %>
+              </div>
+            </div>
+            <div style="text-align: right; min-width: 180px;">
+              <div style="font-size: 24px; font-weight: 800; color: #1DBF73;"><%= new Intl.NumberFormat('ru-RU').format(order.budget) %> ₽</div>
+              <div style="margin-top: 8px; display: inline-block; padding: 4px 12px; border-radius: 40px; font-size: 12px; font-weight: 600; background: #F2F0FE;">
+                <%= order.status === 'open' ? 'Открыт' : order.status === 'in_progress' ? 'В работе' : order.status === 'completed' ? 'Завершён' : 'Отменён' %>
+              </div>
+            </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <button class="btn-outline" onclick="showOrderDetails(<%= order.id %>)">Подробнее</button>
+              <a class="btn-outline" href="/projects/<%= order.id %>">Страница заказа</a>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="empty-state" style="text-align: center; padding: 60px; background: white; border-radius: 32px;">
+          У вас пока нет заказов
+          <br><br>
+          <a href="/create-order" class="btn-green" style="display: inline-block; margin-top: 16px;">Создать заказ</a>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<div id="orderModal" class="modal">
+  <div class="modal-content" style="max-width: 720px;">
+    <div class="modal-header">
+      <h3 id="modalTitle">Детали заказа</h3>
+      <span class="modal-close" onclick="closeOrderModal()">&times;</span>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+  const ordersData = <%- JSON.stringify(orders || []) %>;
+
+  function statusLabel(status) {
+    if (status === 'open') return 'Открыт';
+    if (status === 'in_progress') return 'В работе';
+    if (status === 'completed') return 'Завершён';
+    return 'Отменён';
+  }
+
+  function showOrderDetails(orderId) {
+    const order = ordersData.find(item => item.id === orderId);
+    if (!order) return;
+
+    document.getElementById('modalTitle').textContent = order.title;
+
+    const bidsHtml = order.bids && order.bids.length
+      ? order.bids.map(bid => `
+          <div style="background:#F7F6FF; border-radius:20px; padding:16px; margin-top:12px;">
+            <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+              <strong>${bid.freelancer_name}${bid.rating ? ` · ${Number(bid.rating).toFixed(1)}` : ''}</strong>
+              <strong style="color:#1DBF73;">${new Intl.NumberFormat('ru-RU').format(bid.amount)} ₽</strong>
+            </div>
+            <div style="color:#5a6a7e; margin-top:8px;">Срок: ${bid.delivery_days} дней</div>
+            ${bid.comment ? `<div style="margin-top:8px;">${bid.comment}</div>` : ''}
+            <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+              <a class="btn-outline" href="/messages?user=${bid.freelancer_id}">Написать</a>
+              ${order.status === 'open' && bid.status === 'pending' ? `<button class="btn-green" onclick="acceptBid(${order.id}, ${bid.id})">Выбрать исполнителя</button>` : ''}
+              ${bid.status === 'accepted' ? '<span class="btn-outline" style="pointer-events:none;">Выбран</span>' : ''}
+            </div>
+          </div>
+        `).join('')
+      : '<p style="color:#5a6a7e; margin-top:16px;">Пока нет откликов от исполнителей.</p>';
+
+    document.getElementById('modalBody').innerHTML = `
+      <div style="padding: 12px 0; border-bottom: 1px solid #eef2f6;"><strong>Описание:</strong><br>${order.description}</div>
+      <div style="padding: 12px 0; border-bottom: 1px solid #eef2f6;"><strong>Бюджет:</strong> ${new Intl.NumberFormat('ru-RU').format(order.budget)} ₽</div>
+      <div style="padding: 12px 0; border-bottom: 1px solid #eef2f6;"><strong>Статус:</strong> ${statusLabel(order.status)}</div>
+      ${order.freelancer_name ? `<div style="padding: 12px 0; border-bottom: 1px solid #eef2f6;"><strong>Исполнитель:</strong> ${order.freelancer_name}</div>` : ''}
+      <div style="margin-top: 16px;"><strong>Отклики:</strong>${bidsHtml}</div>
+      <div style="display:flex; gap:12px; margin-top:24px; flex-wrap:wrap;">
+        <a class="btn-outline" href="/projects/${order.id}">Открыть страницу заказа</a>
+        ${order.status === 'open' ? `<button class="btn-outline" style="border-color:#DA4A54; color:#DA4A54;" onclick="cancelOrder(${order.id})">Отменить заказ</button>` : ''}
+      </div>
+    `;
+    document.getElementById('orderModal').classList.add('active');
+  }
+
+  function closeOrderModal() {
+    document.getElementById('orderModal').classList.remove('active');
+  }
+
+  async function acceptBid(projectId, bidId) {
+    if (!confirm('Выбрать этого исполнителя?')) return;
+    const response = await fetch(`/api/projects/${projectId}/bids/${bidId}/accept`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.error || 'Не удалось выбрать исполнителя');
+    }
+  }
+
+  async function cancelOrder(projectId) {
+    if (!confirm('Отменить заказ?')) return;
+    const response = await fetch(`/api/projects/${projectId}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.error || 'Не удалось отменить заказ');
+    }
+  }
+
+  window.addEventListener('click', (e) => {
+    const modal = document.getElementById('orderModal');
+    if (e.target === modal) closeOrderModal();
+  });
+</script>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,44 @@
+<%- include('partials/header', { title: title, currentPath: '/seller/works' }) %>
+
+<main>
+  <div class="container" style="padding: 40px 0 60px;">
+    <div class="section-header" style="margin-bottom: 32px;">
+      <div>
+        <h1>Мои ворки</h1>
+        <p style="color: #5a6a7e; margin-top: 8px;">Готовые услуги, которые заказчики могут купить сразу.</p>
+      </div>
+      <a href="/seller/works/new" class="btn-green" style="padding: 12px 28px;">Создать ворк</a>
+    </div>
+
+    <div class="cards-grid">
+      <% if (works && works.length) { %>
+        <% works.forEach(work => { %>
+          <div class="work-card">
+            <div class="card-avatar" style="background-image: url('<%= work.thumbnail || '/images/avatar-placeholder.jpg' %>');"></div>
+            <div class="work-title"><%= work.title %></div>
+            <div class="work-desc"><%= work.description ? work.description.substring(0, 110) : 'Описание отсутствует' %><%= work.description && work.description.length > 110 ? '...' : '' %></div>
+            <div class="work-price">
+              <% if (work.price) { %>
+                от <%= new Intl.NumberFormat('ru-RU').format(work.price) %> ₽
+              <% } else { %>
+                Цена по запросу
+              <% } %>
+            </div>
+            <div style="font-size: 13px; color: #5a6a7e; margin-bottom: 16px;">
+              <%= work.category_name %> · <%= work.is_active ? 'Опубликован' : 'Скрыт' %>
+            </div>
+            <a href="/work/<%= work.id %>" class="btn-outline">Открыть</a>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="empty-message" style="grid-column: 1/-1; text-align: center; padding: 60px; background: white; border-radius: 28px;">
+          У вас пока нет ворков
+          <br><br>
+          <a href="/seller/works/new" class="btn-green" style="display: inline-block;">Создать первый ворк</a>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

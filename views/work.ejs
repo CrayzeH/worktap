@@ -1,0 +1,345 @@
+<%- include('partials/header', { title: title, currentPath: '/works' }) %>
+
+<main>
+  <div class="container work-page">
+    <div class="work-grid">
+      <!-- Основной контент -->
+      <div class="work-main">
+        <div class="work-header">
+          <div class="work-category">📁 <%= work.category_name || 'Услуга' %></div>
+          <h1><%= work.title %></h1>
+          <div class="work-rating">
+            <span class="stars">
+              <% const rating = Math.round(work.rating || 0); %>
+              <% for (let i = 1; i <= 5; i++) { %>
+                <%= i <= rating ? '★' : '☆' %>
+              <% } %>
+            </span>
+            <span class="reviews-count"><%= work.reviews_count || 0 %> отзывов</span>
+          </div>
+          <div class="work-price" id="mainPrice">
+            <% if (packages && packages.length > 0) { %>
+              от <%= new Intl.NumberFormat('ru-RU').format(packages[0].price) %> ₽
+            <% } else { %>
+              Цена по запросу
+            <% } %>
+          </div>
+        </div>
+
+        <!-- Пакеты услуг -->
+        <% if (work.imagesList && work.imagesList.length) { %>
+          <div class="description-section" style="padding: 0; overflow: hidden;">
+            <img src="<%= work.imagesList[0] %>" alt="<%= work.title %>" style="display: block; width: 100%; max-height: 360px; object-fit: cover;">
+          </div>
+        <% } %>
+
+        <% if (packages && packages.length > 0) { %>
+          <div class="packages-section">
+            <h3 style="margin-bottom: 16px;">📦 Выберите пакет услуг</h3>
+            <div class="packages-tabs">
+              <% packages.forEach((pkg, index) => { %>
+                <button class="package-tab <%= index === 0 ? 'active' : '' %>" data-package="<%= pkg.id %>" data-price="<%= pkg.price %>" data-name="<%= pkg.name %>">
+                  <%= pkg.name === 'econom' ? '💰 Эконом' : pkg.name === 'standard' ? '⭐ Стандарт' : '💎 Бизнес' %>
+                </button>
+              <% }) %>
+            </div>
+
+            <% packages.forEach((pkg, index) => { %>
+              <div id="package-<%= pkg.id %>" class="package-content <%= index === 0 ? 'active' : '' %>">
+                <div class="package-price"><%= new Intl.NumberFormat('ru-RU').format(pkg.price) %> ₽</div>
+                <div class="package-desc" style="color: #5a6a7e; margin-bottom: 16px;"><%= pkg.description %></div>
+                <div class="package-info" style="margin-bottom: 16px;">
+                  <span class="meta-item">⏱️ Срок: <%= pkg.delivery_days %> дней</span>
+                </div>
+                <ul class="package-options">
+                  <% if (pkg.features) {
+                    const features = typeof pkg.features === 'string' ? JSON.parse(pkg.features) : pkg.features;
+                    if (features && features.length) {
+                      features.forEach(feature => { %>
+                        <li><%= feature %></li>
+                  <% }) } } %>
+                </ul>
+                <% if (!isAuthenticated || isClient) { %>
+                  <button class="btn-green" onclick="openOrderModal(<%= work.id %>, <%= pkg.id %>, <%= pkg.price %>, '<%= pkg.name %>')">✅ Купить этот пакет</button>
+                <% } %>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+
+        <!-- Описание -->
+        <div class="description-section">
+          <h3>📖 О услуге</h3>
+          <div class="description-text">
+            <p><%= work.description %></p>
+            <% if (work.requirements) { %>
+              <p style="margin-top: 16px;"><strong>Требования:</strong> <%= work.requirements %></p>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- FAQ -->
+        <% if (faqs && faqs.length > 0) { %>
+          <div class="faq-section">
+            <h3>❓ Часто задаваемые вопросы</h3>
+            <% faqs.forEach(faq => { %>
+              <div class="faq-item">
+                <div class="faq-question"><%= faq.question %> <span>▼</span></div>
+                <div class="faq-answer"><%= faq.answer %></div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+
+        <!-- Отзывы -->
+        <div class="reviews-section">
+          <h3>⭐ Отзывы покупателей</h3>
+          <% if (reviews && reviews.length > 0) { %>
+            <% reviews.forEach(review => { %>
+              <div class="review-item">
+                <div class="review-header">
+                  <span class="review-author"><%= review.reviewer_name %></span>
+                  <span class="stars">
+                    <% for (let i = 1; i <= 5; i++) { %>
+                      <%= i <= review.rating ? '★' : '☆' %>
+                    <% } %>
+                  </span>
+                </div>
+                <div><%= review.comment || 'Покупатель оставил оценку без комментария.' %></div>
+                <div style="font-size: 12px; color: #5a6a7e; margin-top: 8px;"><%= new Date(review.created_at).toLocaleDateString('ru-RU') %></div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div class="empty-message" style="padding: 40px;">😕 Отзывов пока нет. Будьте первым!</div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Сайдбар -->
+      <div class="work-sidebar">
+        <div class="author-card">
+          <div class="author-avatar" style="background-image: url('<%= work.avatar_url || 'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"45\" r=\"22\" fill=\"%231DBF73\"/><text x=\"50\" y=\"55\" text-anchor=\"middle\" fill=\"white\" font-size=\"28\">👤</text></svg>' %>');"></div>
+          <div class="author-name"><%= work.seller_name %></div>
+          <div class="author-role"><%= work.specialization || 'Фрилансер' %></div>
+          <div class="author-stats">
+            <div>✅ Выполнено работ: <%= work.completed_projects || 0 %></div>
+            <div>⭐ Рейтинг: <%= work.seller_rating ? work.seller_rating.toFixed(1) : 'Нет оценок' %></div>
+            <div>📅 На сайте с: <%= work.on_site_since ? new Date(work.on_site_since).toLocaleDateString('ru-RU') : '—' %></div>
+          </div>
+          <button class="btn-write" onclick="contactSeller(<%= work.seller_id %>)">💬 Написать автору</button>
+          <% if (isAuthenticated) { %>
+            <button id="favoriteWorkButton" class="btn-outline action-btn action-btn-full <%= isFavoriteWork ? 'is-favorite' : '' %>" onclick="addWorkToFavorites(<%= work.id %>, this)" style="margin-top:12px;"><%= isFavoriteWork ? 'В избранном' : 'В избранное' %></button>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Модальное окно оформления заказа -->
+<div id="orderModal" class="modal">
+  <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3>📦 Оформление заказа</h3>
+      <span class="modal-close" onclick="closeOrderModal()">&times;</span>
+    </div>
+    <form id="orderForm">
+      <input type="hidden" id="orderWorkId">
+      <input type="hidden" id="orderPackageId">
+      <input type="hidden" id="orderAmount">
+
+      <div class="form-group">
+        <label>Выбранный пакет</label>
+        <input type="text" id="orderPackageName" readonly style="background: #F2F0FE;">
+      </div>
+
+      <div class="form-group">
+        <label>Сумма заказа</label>
+        <input type="text" id="orderAmountDisplay" readonly style="background: #F2F0FE; color: #1DBF73; font-weight: 700; font-size: 20px;">
+      </div>
+
+      <div class="form-group">
+        <label>Ваши требования / ТЗ</label>
+        <textarea id="orderRequirements" rows="4" placeholder="Опишите подробно, что нужно сделать, какие есть пожелания..." style="width: 100%; padding: 12px; border-radius: 20px; border: 1.5px solid #e2e8f0;"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Способ оплаты</label>
+        <select id="orderPaymentMethod" class="filter-select">
+          <option value="wallet">💰 С баланса кошелька</option>
+        </select>
+      </div>
+
+      <button type="submit" class="modal-btn" style="width: 100%;">✅ Оформить заказ</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  let selectedPackageId = null;
+  let selectedPrice = null;
+  let selectedName = null;
+
+  // Переключение пакетов
+  const packageTabs = document.querySelectorAll('.package-tab');
+  const packageContents = document.querySelectorAll('.package-content');
+  const mainPriceSpan = document.getElementById('mainPrice');
+
+  packageTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const packageId = tab.dataset.package;
+      const price = parseInt(tab.dataset.price);
+      const name = tab.dataset.name;
+
+      packageTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      packageContents.forEach(content => content.classList.remove('active'));
+      document.getElementById(`package-${packageId}`).classList.add('active');
+
+      if (price) {
+        mainPriceSpan.textContent = `${new Intl.NumberFormat('ru-RU').format(price)} ₽`;
+      }
+
+      selectedPackageId = packageId;
+      selectedPrice = price;
+      selectedName = name;
+    });
+  });
+
+  // Выбор первого пакета по умолчанию
+  if (packageTabs.length > 0) {
+    selectedPackageId = packageTabs[0].dataset.package;
+    selectedPrice = parseInt(packageTabs[0].dataset.price);
+    selectedName = packageTabs[0].dataset.name;
+  }
+
+  // Открыть модалку заказа
+  function openOrderModal(workId, packageId, price, packageName) {
+    if (!<%= isAuthenticated %>) {
+      if (confirm('Необходимо войти в аккаунт. Перейти на страницу входа?')) {
+        window.location.href = '/login';
+      }
+      return;
+    }
+
+    document.getElementById('orderWorkId').value = workId;
+    document.getElementById('orderPackageId').value = packageId;
+    document.getElementById('orderAmount').value = price;
+    document.getElementById('orderPackageName').value = packageName === 'econom' ? '💰 Эконом' : (packageName === 'standard' ? '⭐ Стандарт' : '💎 Бизнес');
+    document.getElementById('orderAmountDisplay').value = new Intl.NumberFormat('ru-RU').format(price) + ' ₽';
+    document.getElementById('orderRequirements').value = '';
+
+    document.getElementById('orderModal').classList.add('active');
+  }
+
+  function closeOrderModal() {
+    document.getElementById('orderModal').classList.remove('active');
+  }
+
+  // Оформление заказа
+  document.getElementById('orderForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const workId = document.getElementById('orderWorkId').value;
+    const packageId = document.getElementById('orderPackageId').value;
+    const amount = parseInt(document.getElementById('orderAmount').value);
+    const requirements = document.getElementById('orderRequirements').value;
+    const paymentMethod = document.getElementById('orderPaymentMethod').value;
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ Обработка...';
+
+    try {
+      // Сначала проверяем/пополняем баланс если нужно
+      if (paymentMethod === 'wallet') {
+        const walletRes = await fetch('/api/wallet');
+        const walletData = await walletRes.json();
+
+        if (walletData.wallet.balance < amount) {
+          alert(`❌ Недостаточно средств на балансе! Доступно: ${new Intl.NumberFormat('ru-RU').format(walletData.wallet.balance)} ₽\nПополните баланс в кошельке.`);
+          submitBtn.disabled = false;
+          submitBtn.textContent = '✅ Оформить заказ';
+          return;
+        }
+      }
+
+      // Создаём заказ
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          work_id: workId,
+          package_id: packageId,
+          amount: amount,
+          requirements: requirements,
+          payment_method: paymentMethod
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`✅ Заказ успешно оформлен!\n\nНомер заказа: #${data.orderId}\nСумма: ${new Intl.NumberFormat('ru-RU').format(amount)} ₽\n\nСкоро с вами свяжется исполнитель.`);
+        closeOrderModal();
+        window.location.href = '/my-orders';
+      } else {
+        alert('❌ Ошибка: ' + (data.error || 'Не удалось оформить заказ'));
+      }
+    } catch (err) {
+      alert('❌ Ошибка соединения с сервером');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '✅ Оформить заказ';
+    }
+  });
+
+  // Аккордеон FAQ
+  const faqItems = document.querySelectorAll('.faq-item');
+  faqItems.forEach(item => {
+    const question = item.querySelector('.faq-question');
+    if (question) {
+      question.addEventListener('click', () => {
+        item.classList.toggle('open');
+      });
+    }
+  });
+
+  function contactSeller(sellerId) {
+    window.location.href = `/messages?user=${sellerId}`;
+  }
+
+  function setFavoriteButton(button) {
+    if (!button) return;
+    button.classList.add('is-favorite');
+    button.textContent = 'В избранном';
+    button.style.background = '#1DBF73';
+    button.style.color = 'white';
+    button.style.borderColor = '#1DBF73';
+    button.disabled = true;
+  }
+
+  function addWorkToFavorites(workId, button) {
+    fetch('/api/favorites', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({work_id: workId})
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setFavoriteButton(button);
+        } else {
+          alert(data.error || 'Не удалось добавить в избранное');
+        }
+      });
+  }
+
+  // Закрытие модалки по клику вне
+  window.onclick = (e) => {
+    const modal = document.getElementById('orderModal');
+    if (e.target === modal) closeOrderModal();
+  };
+</script>
+
+<%- include('partials/footer') %>

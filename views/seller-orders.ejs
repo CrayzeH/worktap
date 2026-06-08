@@ -1,0 +1,82 @@
+<%- include('partials/header', { title: title, currentPath: '/seller/orders' }) %>
+
+<main>
+  <div class="container" style="padding: 40px 0 60px;">
+    <div class="section-header" style="margin-bottom: 32px;">
+      <div>
+        <h1>Заказы на мои ворки</h1>
+        <p style="color: #5a6a7e; margin-top: 8px;">Рабочая очередь исполнителя: новые, в работе и ожидающие подтверждения заказчиком</p>
+      </div>
+    </div>
+
+    <div class="orders-grid" style="display: flex; flex-direction: column; gap: 20px;">
+      <% if (orders && orders.length) { %>
+        <% orders.forEach(order => { %>
+          <div class="order-card" style="background: white; border-radius: 28px; padding: 24px 28px; border: 1px solid #eef2f6;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 260px;">
+                <div class="order-title" style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">
+                  <a href="/work/<%= order.work_id %>" style="color: #222; text-decoration: none;"><%= order.work_title %></a>
+                </div>
+                <div class="order-meta" style="display: flex; flex-wrap: wrap; gap: 16px; color: #5a6a7e; font-size: 13px; margin-bottom: 12px;">
+                  <span>Заказчик: <%= order.buyer_name %></span>
+                  <span>Пакет: <%= order.package_name %></span>
+                  <span>Срок: <%= order.delivery_days %> дней</span>
+                  <span>Создан: <%= new Date(order.created_at).toLocaleDateString('ru-RU') %></span>
+                </div>
+                <% if (order.requirements) { %>
+                  <div style="color: #5a6a7e; font-size: 14px;"><strong>ТЗ:</strong> <%= order.requirements %></div>
+                <% } %>
+              </div>
+              <div style="text-align: right; min-width: 180px;">
+                <div style="font-size: 24px; font-weight: 800; color: #1DBF73;"><%= new Intl.NumberFormat('ru-RU').format(order.amount) %> ₽</div>
+                <div style="margin-top: 8px; display: inline-block; padding: 4px 12px; border-radius: 40px; font-size: 12px; font-weight: 600; background: #F2F0FE;">
+                  <%= order.status === 'paid' ? 'Новый' : order.status === 'in_progress' ? 'В работе' : order.status === 'delivered' ? 'Сдан, ждёт заказчика' : order.status === 'completed' ? 'Завершён' : 'Отменён' %>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+              <a class="btn-outline" href="/messages?user=<%= order.buyer_id %>">Написать заказчику</a>
+              <% if (order.status === 'paid') { %>
+                <button class="btn-green" onclick="startOrder(<%= order.id %>)">Взять в работу</button>
+              <% } %>
+              <% if (order.status === 'in_progress') { %>
+                <button class="btn-green" onclick="deliverOrder(<%= order.id %>)">Сдать заказ</button>
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="empty-message" style="text-align: center; padding: 60px; background: white; border-radius: 28px;">
+          Пока нет заказов на ваши ворки
+        </div>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  async function postOrderAction(orderId, action) {
+    const response = await fetch(`/api/orders/${orderId}/${action}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'}
+    });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.error || 'Не удалось обновить заказ');
+    }
+  }
+
+  function startOrder(orderId) {
+    postOrderAction(orderId, 'start');
+  }
+
+  function deliverOrder(orderId) {
+    postOrderAction(orderId, 'deliver');
+  }
+</script>
+
+<%- include('partials/footer') %>

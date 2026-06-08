@@ -1,0 +1,83 @@
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>Топ категории</h4>
+          <% if (categories && categories.length) { %>
+            <% categories.slice(0, 7).forEach(cat => { %>
+              <a href="/market?category=<%= cat.id %>"><%= cat.name %></a>
+            <% }) %>
+          <% } else { %>
+            <a href="/market?category=1">Разработка</a>
+            <a href="/market?category=2">Дизайн</a>
+            <a href="/market?category=3">Маркетинг</a>
+            <a href="/market?category=4">Тексты</a>
+            <a href="/market?category=5">Аудио/Видео</a>
+          <% } %>
+        </div>
+        <div class="footer-col">
+          <h4>О Проекте</h4>
+          <a href="/about">О нас</a>
+          <a href="/how-it-works">Как это работает</a>
+          <a href="/privacy">Политика Приватности</a>
+          <a href="/terms">Правила Пользования</a>
+        </div>
+        <div class="footer-col">
+          <h4>Поддержка</h4>
+          <a href="/contacts">Контакты</a>
+          <a href="/faq">FAQ</a>
+          <a href="/support">Служба поддержки</a>
+        </div>
+        <div class="footer-col">
+          <h4>Следите за нами</h4>
+          <div class="social-icons">
+            <i class="fab fa-vk"></i>
+          </div>
+        </div>
+      </div>
+      <div class="copyright">
+        Copyright © 2025 | Ворк.Тап — Фриланс-маркетплейс. Все права защищены
+      </div>
+    </div>
+  </footer>
+</main>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<script>
+  // Анимация закреплённого хедера
+  const header = document.getElementById('mainHeader');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 20) {
+      header.classList.add('scrolled');
+    } else {
+      header.classList.remove('scrolled');
+    }
+  });
+
+  // Выпадающее меню пользователя
+  const userDropdown = document.getElementById('userDropdown');
+  if (userDropdown) {
+    const userName = userDropdown.querySelector('.user-name');
+    if (userName) {
+      userName.addEventListener('click', (e) => {
+        e.stopPropagation();
+        userDropdown.classList.toggle('active');
+      });
+
+      document.addEventListener('click', () => {
+        userDropdown.classList.remove('active');
+      });
+    }
+  }
+
+  // Активная ссылка в навигации
+  const currentPath = window.location.pathname;
+  document.querySelectorAll('.nav-links a').forEach(link => {
+    if (link.getAttribute('href') === currentPath) {
+      link.classList.add('active');
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>WorkTap — Мои заказы</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #F6FAFD;
+      color: #222222;
+      line-height: 1.4;
+    }
+
+    .container {
+      width: 70%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+    /* ===== ЗАКРЕПЛЁННЫЙ ХЕДЕР ===== */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      padding: 20px 0;
+      transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      background-color: #F7F6FF;
+    }
+
+    .header.scrolled {
+      padding: 12px 0;
+      background-color: rgba(247, 246, 255, 0.96);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+    }
+
+    .page-top-padding {
+      padding-top: 88px;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+      width: 70%;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 48px;
+    }
+
+    .logo img {
+      height: 36px;
+      width: auto;
+      display: block;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: #222222;
+      font-weight: 500;
+      transition: 0.2s;
+      font-size: 16px;
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0%;
+      height: 2px;
+      background: #1DBF73;
+      transition: width 0.25s ease;
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    .nav-links a:hover {
+      color: #1DBF73;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .auth-buttons {
+      display: flex;
+      gap: 16px;
+    }
+
+    .auth-buttons a {
+      text-decoration: none;
+      font-weight: 600;
+      padding: 8px 20px;
+      border-radius: 40px;
+      transition: all 0.25s ease;
+    }
+
+    .login {
+      background: #1DBF73;
+      color: white !important;
+    }
+
+    .register {
+      background: #F2F0FE;
+      color: #1DBF73;
+    }
+
+    /* ===== МОИ ЗАКАЗЫ ===== */
+    .orders-page {
+      padding: 40px 0 60px;
+    }
+
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    .page-header h1 {
+      font-size: 36px;
+      margin-bottom: 8px;
+    }
+
+    .page-header p {
+      color: #5a6a7e;
+    }
+
+    /* фильтры */
+    .filters-bar {
+      background: white;
+      border-radius: 28px;
+      padding: 24px 28px;
+      margin-bottom: 32px;
+      border: 1px solid #eef2f6;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 20px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .filter-group label {
+      font-weight: 600;
+      font-size: 13px;
+      color: #5a6a7e;
+    }
+
+    .filter-select, .search-input {
+      padding: 10px 18px;
+      border-radius: 40px;
+      border: 1.5px solid #e2e8f0;
+      background: white;
+      font-size: 14px;
+      min-width: 160px;
+    }
+
+    .search-input {
+      min-width: 240px;
+    }
+
+    .sort-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .sort-btn {
+      background: transparent;
+      border: 1.5px solid #e2e8f0;
+      padding: 8px 20px;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: 0.2s;
+      font-weight: 500;
+    }
+
+    .sort-btn.active {
+      background: #1DBF73;
+      border-color: #1DBF73;
+      color: white;
+    }
+
+    /* сетка заказов */
+    .orders-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .order-card {
+      background: white;
+      border-radius: 28px;
+      padding: 24px 28px;
+      border: 1px solid #eef2f6;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .order-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 28px -12px rgba(0, 0, 0, 0.1);
+      border-color: #1DBF73;
+    }
+
+    .order-info {
+      flex: 2;
+      min-width: 240px;
+    }
+
+    .order-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .order-desc {
+      color: #5a6a7e;
+      font-size: 14px;
+      margin-bottom: 12px;
+      max-width: 500px;
+    }
+
+    .order-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      font-size: 13px;
+    }
+
+    .order-meta span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .order-budget {
+      font-size: 24px;
+      font-weight: 800;
+      color: #1DBF73;
+      min-width: 140px;
+      text-align: right;
+    }
+
+    .order-status {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 40px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .status-in_progress {
+      background: #FBA45720;
+      color: #FBA457;
+      border: 1px solid #FBA457;
+    }
+
+    .status-completed {
+      background: #1DBF7320;
+      color: #1DBF73;
+      border: 1px solid #1DBF73;
+    }
+
+    .status-cancelled {
+      background: #DA4A5420;
+      color: #DA4A54;
+      border: 1px solid #DA4A54;
+    }
+
+    .order-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-details {
+      background: transparent;
+      border: 1.5px solid #1DBF73;
+      padding: 8px 20px;
+      border-radius: 40px;
+      color: #1DBF73;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-details:hover {
+      background: #1DBF73;
+      color: white;
+    }
+
+    /* пустое состояние */
+    .empty-state {
+      text-align: center;
+      padding: 60px;
+      background: white;
+      border-radius: 32px;
+    }
+
+    /* модальное окно */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 32px;
+      padding: 32px;
+      width: 90%;
+      max-width: 560px;
+      max-height: 80vh;
+      overflow-y: auto;
+      animation: fadeInUp 0.3s ease;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .modal-header h3 {
+      font-size: 24px;
+    }
+
+    .modal-close {
+      font-size: 28px;
+      cursor: pointer;
+    }
+
+    .order-detail-row {
+      padding: 12px 0;
+      border-bottom: 1px solid #eef2f6;
+    }
+
+    .bids-list {
+      margin-top: 16px;
+    }
+
+    .bid-item {
+      background: #F7F6FF;
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    /* футер */
+    .footer {
+      background: #F2F0FE;
+      padding: 60px 0 30px;
+      margin-top: 60px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 40px;
+    }
+
+    .footer-col h4 {
+      margin-bottom: 20px;
+    }
+
+    .footer-col a {
+      display: block;
+      color: #4a4a6a;
+      text-decoration: none;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .footer-col a:hover {
+      color: #1DBF73;
+    }
+
+    .copyright {
+      text-align: center;
+      margin-top: 50px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      font-size: 13px;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 1200px) {
+      .container, .header-inner { width: 85%; }
+    }
+
+    @media (max-width: 900px) {
+      .container, .header-inner { width: 90%; }
+      .filters-bar { flex-direction: column; align-items: stretch; }
+      .order-card { flex-direction: column; align-items: flex-start; }
+      .order-budget { text-align: left; }
+      .header-inner { flex-direction: column; align-items: stretch; }
+      .logo-area { justify-content: space-between; }
+      .nav-links { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header" id="mainHeader">
+  <div class="header-inner">
+    <div class="logo-area">
+      <a href="#" class="logo">
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 50'%3E%3Ctext x='0' y='35' font-size='28' font-weight='800' fill='%23222222'%3Eworktap%3C/text%3E%3C/svg%3E" alt="WorkTap">
+      </a>
+      <div class="nav-links">
+        <a href="#">Биржа</a>
+        <a href="#">Ворки</a>
+        <a href="#">Конкурсы</a>
+        <a href="#">Создать заказ</a>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="auth-buttons">
+        <a href="#" class="login">Войти</a>
+        <a href="#" class="register">Регистрация</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="page-top-padding"></div>
+
+<main>
+  <div class="container orders-page">
+    <div class="page-header">
+      <h1>Мои заказы</h1>
+      <p>Управляйте своими проектами, отслеживайте статусы и выбирайте исполнителей</p>
+    </div>
+
+    <!-- фильтры -->
+    <div class="filters-bar">
+      <div class="filter-group">
+        <label>🔍 Поиск</label>
+        <input type="text" id="searchInput" class="search-input" placeholder="Название заказа...">
+      </div>
+      <div class="filter-group">
+        <label>📌 Статус</label>
+        <select id="statusFilter" class="filter-select">
+          <option value="all">Все заказы</option>
+          <option value="in_progress">Выполняется</option>
+          <option value="completed">Завершён</option>
+          <option value="cancelled">Отменён</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>💰 Сортировка по цене</label>
+        <div class="sort-buttons">
+          <button class="sort-btn" data-sort="default">По умолчанию</button>
+          <button class="sort-btn" data-sort="price_asc">Цена ↑</button>
+          <button class="sort-btn" data-sort="price_desc">Цена ↓</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- список заказов -->
+    <div id="ordersList" class="orders-grid"></div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-col"><h4>Топ категории</h4><a href="#">Тексты и переводы</a><a href="#">Разработка</a><a href="#">Дизайн</a><a href="#">Аудио, видео монтаж</a><a href="#">Соц сети и реклама</a><a href="#">Бизнес и жизнь</a><a href="#">SEO и оптимизация</a></div>
+      <div class="footer-col"><h4>О Проекте</h4><a href="#">О нас</a><a href="#">Как это работает</a><a href="#">Политика Приватности</a><a href="#">Правила Пользования</a><a href="#">Пресса о нас</a></div>
+      <div class="footer-col"><h4>Поддержка</h4><a href="#">Контакты</a><a href="#">Политика безопасности</a><a href="#">FAQ</a></div>
+      <div class="footer-col"><h4>Follow</h4><div class="social-icons"><span>📘</span><span>🐦</span><span>📸</span></div></div>
+    </div>
+    <div class="copyright">Copyright © 2021 | WorkTap — Worktap.KZ. All Rights Reserved</div>
+  </div>
+</footer>
+
+<!-- модальное окно деталей заказа -->
+<div id="orderModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalTitle">Детали заказа</h3>
+      <span class="modal-close">&times;</span>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+  // хедер анимация
+  const header = document.getElementById('mainHeader');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 20) header.classList.add('scrolled');
+    else header.classList.remove('scrolled');
+  });
+
+  // данные заказов
+  let orders = [
+    { id: 1, title: "Разработка интернет-магазина", description: "Нужен полноценный интернет-магазин с корзиной, оплатой и админ-панелью", budget: 350000, deadline: "2025-04-20", status: "in_progress", createdAt: "2025-03-01", bids: [{ name: "Александр Волков", price: 320000, days: 25 }, { name: "Екатерина Смирнова", price: 350000, days: 20 }] },
+    { id: 2, title: "Дизайн лендинга для стартапа", description: "Современный лендинг с анимацией, формами захвата, адаптив", budget: 120000, deadline: "2025-03-30", status: "in_progress", createdAt: "2025-03-10", bids: [{ name: "Анна Морозова", price: 115000, days: 12 }, { name: "Дмитрий Ким", price: 120000, days: 10 }] },
+    { id: 3, title: "SEO-продвижение сайта", description: "Вывод в топ-10 по коммерческим запросам, оптимизация структуры", budget: 250000, deadline: "2025-05-15", status: "completed", createdAt: "2025-02-15", bids: [{ name: "Иван Соколов", price: 240000, days: 45 }] },
+    { id: 4, title: "Написание статей для блога", description: "10 статей по 3000 символов на тему IT, бизнес, маркетинг", budget: 45000, deadline: "2025-03-25", status: "completed", createdAt: "2025-03-05", bids: [{ name: "Ольга Петрова", price: 42000, days: 7 }, { name: "Мария Иванова", price: 45000, days: 5 }] },
+    { id: 5, title: "Мобильное приложение доставки", description: "Приложение для заказа еды с картой, оплатой, push-уведомлениями", budget: 800000, deadline: "2025-06-01", status: "cancelled", createdAt: "2025-02-20", bids: [] },
+    { id: 6, title: "Верстка email-рассылки", description: "Адаптивные шаблоны для email-маркетинга (5 вариантов)", budget: 30000, deadline: "2025-03-18", status: "completed", createdAt: "2025-03-08", bids: [{ name: "Сергей Новиков", price: 28000, days: 3 }] },
+    { id: 7, title: "Настройка контекстной рекламы", description: "Яндекс.Директ и Google Ads, настройка кампаний, оптимизация", budget: 90000, deadline: "2025-04-10", status: "in_progress", createdAt: "2025-03-12", bids: [{ name: "Максим Ветров", price: 85000, days: 14 }] }
+  ];
+
+  let currentSort = "default";
+  let currentStatus = "all";
+  let currentSearch = "";
+
+  function getStatusText(status) {
+    const map = { in_progress: "Выполняется", completed: "Завершён", cancelled: "Отменён" };
+    return map[status] || status;
+  }
+
+  function getStatusClass(status) {
+    return `status-${status}`;
+  }
+
+  function formatDate(dateStr) {
+    return dateStr.split('-').reverse().join('.');
+  }
+
+  function filterAndSortOrders() {
+    let filtered = [...orders];
+
+    if (currentStatus !== "all") {
+      filtered = filtered.filter(o => o.status === currentStatus);
+    }
+
+    if (currentSearch.trim()) {
+      const search = currentSearch.toLowerCase();
+      filtered = filtered.filter(o => o.title.toLowerCase().includes(search));
+    }
+
+    if (currentSort === "price_asc") {
+      filtered.sort((a,b) => a.budget - b.budget);
+    } else if (currentSort === "price_desc") {
+      filtered.sort((a,b) => b.budget - a.budget);
+    } else {
+      filtered.sort((a,b) => b.id - a.id);
+    }
+
+    return filtered;
+  }
+
+  function renderOrders() {
+    const filtered = filterAndSortOrders();
+    const container = document.getElementById('ordersList');
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<div class="empty-state">📭 Заказов не найдено. Создайте новый заказ!</div>`;
+      return;
+    }
+
+    container.innerHTML = filtered.map(order => `
+      <div class="order-card">
+        <div class="order-info">
+          <div class="order-title">${order.title}</div>
+          <div class="order-desc">${order.description.substring(0, 100)}${order.description.length > 100 ? '...' : ''}</div>
+          <div class="order-meta">
+            <span>📅 Создан: ${formatDate(order.createdAt)}</span>
+            <span>⏰ Срок: ${formatDate(order.deadline)}</span>
+            <span class="order-status ${getStatusClass(order.status)}">${getStatusText(order.status)}</span>
+          </div>
+        </div>
+        <div class="order-budget">
+          ${order.budget.toLocaleString('ru-RU')} ₸
+        </div>
+        <div class="order-actions">
+          <button class="btn-details" data-id="${order.id}">Подробнее</button>
+        </div>
+      </div>
+    `).join('');
+
+    // добавить обработчики на кнопки
+    document.querySelectorAll('.btn-details').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = parseInt(btn.dataset.id);
+        showOrderDetails(id);
+      });
+    });
+  }
+
+  function showOrderDetails(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    const modal = document.getElementById('orderModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.textContent = `Заказ: ${order.title}`;
+
+    let bidsHtml = '';
+    if (order.bids && order.bids.length > 0) {
+      bidsHtml = `<div class="bids-list"><strong>📋 Предложения исполнителей:</strong>`;
+      order.bids.forEach(bid => {
+        bidsHtml += `
+          <div class="bid-item">
+            <div style="display:flex; justify-content:space-between;">
+              <span><strong>${bid.name}</strong></span>
+              <span style="color:#1DBF73; font-weight:700;">${bid.price.toLocaleString('ru-RU')} ₸</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:8px;">
+              <span>⏱️ Срок: ${bid.days} дней</span>
+              <button class="btn-details" style="padding:4px 16px; font-size:13px;" onclick="alert('Выбран исполнитель ${bid.name}')">Выбрать</button>
+            </div>
+          </div>
+        `;
+      });
+      bidsHtml += `</div>`;
+    } else {
+      bidsHtml = `<p style="color:#5a6a7e;">📭 Пока нет предложений от исполнителей</p>`;
+    }
+
+    modalBody.innerHTML = `
+      <div class="order-detail-row"><strong>📝 Описание:</strong><br>${order.description}</div>
+      <div class="order-detail-row"><strong>💰 Бюджет:</strong> ${order.budget.toLocaleString('ru-RU')} ₸</div>
+      <div class="order-detail-row"><strong>⏰ Срок выполнения:</strong> ${formatDate(order.deadline)}</div>
+      <div class="order-detail-row"><strong>📅 Создан:</strong> ${formatDate(order.createdAt)}</div>
+      <div class="order-detail-row"><strong>📌 Статус:</strong> <span class="order-status ${getStatusClass(order.status)}">${getStatusText(order.status)}</span></div>
+      ${bidsHtml}
+      <div style="margin-top: 24px; display: flex; gap: 12px;">
+        <button class="btn-details" onclick="alert('Отправлен запрос на изменение заказа')">✏️ Редактировать</button>
+        <button class="btn-details" style="border-color:#DA4A54; color:#DA4A54;" onclick="alert('Заказ отменён')">❌ Отменить заказ</button>
+      </div>
+    `;
+
+    modal.classList.add('active');
+  }
+
+  // фильтры
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    currentSearch = e.target.value;
+    renderOrders();
+  });
+
+  document.getElementById('statusFilter').addEventListener('change', (e) => {
+    currentStatus = e.target.value;
+    renderOrders();
+  });
+
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentSort = btn.dataset.sort;
+      renderOrders();
+    });
+  });
+
+  // модалка
+  const modal = document.getElementById('orderModal');
+  const closeBtn = document.querySelector('.modal-close');
+  closeBtn.onclick = () => modal.classList.remove('active');
+  window.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
+
+  // глобальная функция для выбора (чтобы работала из innerHTML)
+  window.alert = function(msg) {
+    const notif = document.createElement('div');
+    notif.textContent = msg;
+    notif.style.position = 'fixed';
+    notif.style.bottom = '20px';
+    notif.style.right = '20px';
+    notif.style.background = '#1DBF73';
+    notif.style.color = 'white';
+    notif.style.padding = '12px 24px';
+    notif.style.borderRadius = '40px';
+    notif.style.zIndex = '3000';
+    notif.style.fontWeight = '600';
+    document.body.appendChild(notif);
+    setTimeout(() => notif.remove(), 2000);
+  };
+
+  // начальный рендер
+  renderOrders();
+</script>
+</body>
+</html>

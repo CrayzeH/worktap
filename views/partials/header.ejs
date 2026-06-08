@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title><%= title || 'Ворк.Тап — маркетплейс фриланс-услуг' %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="header-hero-bg">
+  <header class="header" id="mainHeader">
+    <div class="header-inner">
+      <div class="logo-area">
+        <a href="/" class="logo">Ворк.Тап</a>
+        <div class="nav-links">
+          <a href="/market" class="<%= currentPath === '/market' ? 'active' : '' %>">Биржа</a>
+
+          <% if (isAuthenticated) { %>
+            <% if (isClient) { %>
+              <a href="/works" class="<%= currentPath === '/works' ? 'active' : '' %>">Ворки</a>
+              <a href="/my-tasks" class="<%= currentPath === '/my-tasks' ? 'active' : '' %>">Мои заказы</a>
+              <a href="/my-orders" class="<%= currentPath === '/my-orders' ? 'active' : '' %>">Мои покупки</a>
+              <a href="/create-order" class="create-order-link">Создать заказ</a>
+            <% } %>
+
+            <% if (isFreelancer) { %>
+              <a href="/seller/works" class="<%= currentPath === '/seller/works' || currentPath === '/seller/works/new' ? 'active' : '' %>">Мои ворки</a>
+              <a href="/seller/orders" class="<%= currentPath === '/seller/orders' ? 'active' : '' %>">Заказы на ворки</a>
+            <% } %>
+
+            <% if (isAdmin) { %>
+              <a href="/admin" class="<%= currentPath === '/admin' ? 'active' : '' %>">Админка</a>
+            <% } %>
+
+            <a href="/messages" class="<%= currentPath === '/messages' ? 'active' : '' %>">Чат</a>
+          <% } else { %>
+            <a href="/works" class="<%= currentPath === '/works' ? 'active' : '' %>">Ворки</a>
+          <% } %>
+        </div>
+      </div>
+      <div class="header-actions">
+        <% if (isAuthenticated) { %>
+          <div class="user-menu">
+            <div class="dropdown" id="userDropdown">
+              <span class="user-name">
+                👤 <%= user.full_name ? user.full_name.split(' ')[0] : 'Профиль' %>
+                ▼
+              </span>
+              <div class="dropdown-menu">
+                <a href="/profile/<%= user.id %>">Мой профиль</a>
+                <% if (isClient) { %>
+                  <a href="/my-tasks">Мои заказы</a>
+                  <a href="/my-orders">Мои покупки</a>
+                <% } %>
+                <% if (isFreelancer) { %>
+                  <a href="/seller/works">Мои ворки</a>
+                  <a href="/seller/works/new">Создать ворк</a>
+                  <a href="/seller/orders">Заказы на ворки</a>
+                <% } %>
+                <% if (isAdmin) { %>
+                  <a href="/admin">Админка</a>
+                <% } %>
+                <a href="/messages">Чат</a>
+                <a href="/wallet">Кошелёк</a>
+                <a href="/favorites">Избранное</a>
+                <hr>
+                <a href="/logout" style="color: #DA4A54;">Выйти</a>
+              </div>
+            </div>
+          </div>
+        <% } else { %>
+          <div class="auth-buttons">
+            <a href="/login" class="login">Войти</a>
+            <a href="/register" class="register">Регистрация</a>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </header>
+<script src="/js/chat-widget.js"></script>

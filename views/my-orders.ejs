@@ -1,0 +1,158 @@
+<%- include('partials/header', { title: title, currentPath: '/my-orders' }) %>
+
+<main>
+  <div class="container" style="padding: 40px 0 60px;">
+    <div class="section-header" style="margin-bottom: 32px;">
+      <div>
+        <h1>Мои покупки</h1>
+        <p style="color: #5a6a7e; margin-top: 8px;">Покупки готовых ворков, статусы выполнения и отзывы</p>
+      </div>
+    </div>
+
+    <div class="orders-grid" style="display: flex; flex-direction: column; gap: 20px;">
+      <% if (orders && orders.length > 0) { %>
+        <% orders.forEach(order => { %>
+          <div class="order-card" style="background: white; border-radius: 28px; padding: 24px 28px; border: 1px solid #eef2f6;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+              <div style="flex: 1; min-width: 260px;">
+                <div class="order-title" style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">
+                  <a href="/work/<%= order.work_id %>" style="color: #222; text-decoration: none;"><%= order.work_title %></a>
+                </div>
+                <div class="order-meta" style="display: flex; flex-wrap: wrap; gap: 20px; font-size: 13px; margin-bottom: 12px;">
+                  <span>Пакет: <%= order.package_name === 'econom' ? 'Эконом' : order.package_name === 'standard' ? 'Стандарт' : 'Бизнес' %></span>
+                  <span>Исполнитель: <%= order.seller_name %></span>
+                  <span>Срок: <%= order.delivery_days %> дней</span>
+                  <span>Заказано: <%= new Date(order.created_at).toLocaleDateString('ru-RU') %></span>
+                </div>
+                <% if (order.requirements) { %>
+                  <div class="order-desc" style="color: #5a6a7e; font-size: 14px; margin-top: 8px;">
+                    <strong>ТЗ:</strong> <%= order.requirements.substring(0, 180) %><%= order.requirements.length > 180 ? '...' : '' %>
+                  </div>
+                <% } %>
+              </div>
+              <div style="text-align: right; min-width: 190px;">
+                <div class="order-budget" style="font-size: 24px; font-weight: 800; color: #1DBF73;">
+                  <%= new Intl.NumberFormat('ru-RU').format(order.amount) %> ₽
+                </div>
+                <div class="order-status" style="margin-top: 8px; display: inline-block; padding: 4px 12px; border-radius: 40px; font-size: 12px; font-weight: 600;
+                  <% if (order.status === 'paid') { %>background: #FBA45720; color: #FBA457; border: 1px solid #FBA457;
+                  <% } else if (order.status === 'in_progress') { %>background: #1DBF7320; color: #1DBF73; border: 1px solid #1DBF73;
+                  <% } else if (order.status === 'delivered') { %>background: #F2F0FE; color: #222; border: 1px solid #d8d4fb;
+                  <% } else if (order.status === 'completed') { %>background: #1DBF7320; color: #1DBF73; border: 1px solid #1DBF73;
+                  <% } else { %>background: #DA4A5420; color: #DA4A54; border: 1px solid #DA4A54;<% } %>">
+                  <%= order.status === 'paid' ? 'Оплачен' : order.status === 'in_progress' ? 'В работе' : order.status === 'delivered' ? 'Сдан' : order.status === 'completed' ? 'Завершён' : 'Отменён' %>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+              <a class="btn-outline" href="/messages?user=<%= order.seller_id %>">Написать исполнителю</a>
+              <% if (order.status === 'paid') { %>
+                <button class="btn-outline" style="border-color: #DA4A54; color: #DA4A54;" onclick="cancelOrder(<%= order.id %>)">Отменить заказ</button>
+              <% } %>
+              <% if (order.status === 'delivered') { %>
+                <button class="btn-green" onclick="completeOrder(<%= order.id %>)">Подтвердить выполнение</button>
+              <% } %>
+              <% if (order.status === 'completed' && !order.review_id) { %>
+                <button class="btn-outline" onclick="openReviewModal(<%= order.id %>)">Оставить отзыв</button>
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="empty-message" style="text-align: center; padding: 60px; background: white; border-radius: 28px;">
+          У вас пока нет покупок
+          <br><br>
+          <a href="/works" class="btn-green">Найти услуги</a>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<div id="reviewModal" class="modal">
+  <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3>Оставить отзыв</h3>
+      <span class="modal-close" onclick="closeReviewModal()">&times;</span>
+    </div>
+    <form id="reviewForm">
+      <input type="hidden" id="reviewOrderId">
+      <div class="form-group">
+        <label>Оценка</label>
+        <select id="reviewRating" class="filter-select" required>
+          <option value="5">5 - отлично</option>
+          <option value="4">4 - хорошо</option>
+          <option value="3">3 - нормально</option>
+          <option value="2">2 - плохо</option>
+          <option value="1">1 - очень плохо</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Комментарий</label>
+        <textarea id="reviewComment" rows="4" style="width:100%; padding:12px; border-radius:20px; border:1.5px solid #e2e8f0;"></textarea>
+      </div>
+      <button type="submit" class="modal-btn" style="width:100%;">Отправить отзыв</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  async function cancelOrder(orderId) {
+    if (!confirm('Отменить заказ? Средства будут возвращены на баланс.')) return;
+    const response = await fetch(`/api/orders/${orderId}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.error || 'Не удалось отменить заказ');
+    }
+  }
+
+  async function completeOrder(orderId) {
+    if (!confirm('Подтвердить выполнение заказа и перевести оплату исполнителю?')) return;
+    const response = await fetch(`/api/orders/${orderId}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.error || 'Не удалось завершить заказ');
+    }
+  }
+
+  function openReviewModal(orderId) {
+    document.getElementById('reviewOrderId').value = orderId;
+    document.getElementById('reviewModal').classList.add('active');
+  }
+
+  function closeReviewModal() {
+    document.getElementById('reviewModal').classList.remove('active');
+  }
+
+  document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const orderId = document.getElementById('reviewOrderId').value;
+    const response = await fetch(`/api/orders/${orderId}/review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rating: Number(document.getElementById('reviewRating').value),
+        comment: document.getElementById('reviewComment').value
+      })
+    });
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.error || 'Не удалось отправить отзыв');
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>

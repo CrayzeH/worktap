@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>WorkTap — маркетплейс фриланс-услуг</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #F6FAFD;
+      color: #222222;
+      line-height: 1.4;
+    }
+
+    /* основной контент 70% ширины, отступы по 15% */
+    .container {
+      width: 70%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+    /* ===== ЗАКРЕПЛЁННЫЙ ХЕДЕР С АНИМАЦИЕЙ ===== */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      padding: 20px 0;
+      transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      background-color: #F7F6FF;
+      backdrop-filter: blur(0px);
+    }
+
+    /* Класс, который добавляется при скролле */
+    .header.scrolled {
+      padding: 12px 0;
+      background-color: rgba(247, 246, 255, 0.96);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    }
+
+    /* hero-блок теперь имеет отступ сверху, чтобы не перекрывался фиксированным хедером */
+    .header-hero-bg {
+      background-color: #F7F6FF;
+      padding-top: 88px; /* высота хедера в обычном состоянии ~80px */
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+      width: 70%;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 48px;
+    }
+
+    .logo img {
+      height: 36px;
+      width: auto;
+      display: block;
+      transition: transform 0.2s ease;
+    }
+
+    .logo:hover img {
+      transform: scale(1.02);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: #222222;
+      font-weight: 500;
+      transition: 0.2s;
+      font-size: 16px;
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0%;
+      height: 2px;
+      background: #1DBF73;
+      transition: width 0.25s ease;
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    .nav-links a:hover {
+      color: #1DBF73;
+    }
+
+    .create-order-link {
+      background: transparent;
+      padding: 0;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .auth-buttons {
+      display: flex;
+      gap: 16px;
+    }
+
+    .auth-buttons a {
+      text-decoration: none;
+      font-weight: 600;
+      padding: 8px 20px;
+      border-radius: 40px;
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+
+    /* Войти — сплошная зеленая кнопка */
+    .login {
+      background: #1DBF73;
+      color: white !important;
+      border: none;
+      box-shadow: 0 2px 6px rgba(29, 191, 115, 0.2);
+    }
+
+    .login:hover {
+      background: #179e5f;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(29, 191, 115, 0.3);
+    }
+
+    /* Регистрация */
+    .register {
+      background: #F2F0FE;
+      color: #1DBF73;
+      border: none;
+    }
+
+    .register:hover {
+      background: #e5e2fc;
+      transform: translateY(-2px);
+    }
+
+    /* ===== HERO ===== */
+    .hero {
+      padding: 60px 0 56px;
+    }
+
+    .hero-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 48px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .hero-left {
+      flex: 1;
+      max-width: 600px;
+    }
+
+    .hero-left h1 {
+      font-size: 52px;
+      line-height: 1.2;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 20px;
+      color: #222222;
+      animation: fadeSlideUp 0.6s ease-out;
+    }
+
+    .hero-left h1 span {
+      color: #2AC37B;
+      position: relative;
+      display: inline-block;
+    }
+
+    .hero-left h1 span::after {
+      content: '';
+      position: absolute;
+      bottom: 6px;
+      left: 0;
+      width: 100%;
+      height: 8px;
+      background: rgba(42, 195, 123, 0.25);
+      border-radius: 4px;
+      z-index: -1;
+    }
+
+    .hero-desc {
+      font-size: 18px;
+      color: #5a6a7e;
+      margin-bottom: 32px;
+      animation: fadeSlideUp 0.6s ease-out 0.05s backwards;
+    }
+
+    .search-bar {
+      display: flex;
+      background: white;
+      border-radius: 60px;
+      padding: 6px 6px 6px 24px;
+      justify-content: space-between;
+      margin-bottom: 40px;
+      border: 1px solid #e0e7ed;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .search-bar:focus-within {
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+      transform: scale(1.01);
+    }
+
+    .search-bar input {
+      background: transparent;
+      border: none;
+      font-size: 16px;
+      width: 100%;
+      outline: none;
+      color: #222222;
+    }
+
+    .search-bar button {
+      background: #FBA457;
+      border: none;
+      padding: 12px 36px;
+      border-radius: 40px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .search-bar button:hover {
+      background: #e8923e;
+      transform: scale(0.97);
+    }
+
+    .rubrics-title {
+      font-weight: 600;
+      margin-bottom: 20px;
+      font-size: 18px;
+      color: #222222;
+    }
+
+    .rubric-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .rubric-btn {
+      background: transparent;
+      padding: 10px 24px;
+      border-radius: 40px;
+      text-decoration: none;
+      color: #FBA457;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      border: 1.5px solid #FBA457;
+    }
+
+    .rubric-btn:hover {
+      background: #FBA457;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(251, 164, 87, 0.3);
+    }
+
+    .hero-right {
+      flex: 0.9;
+      min-width: 280px;
+      background: linear-gradient(135deg, #e0f0e8, #d4e4f0);
+      border-radius: 32px;
+      height: 340px;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 320"><rect width="400" height="320" fill="%23E8F3EF" rx="28"/><circle cx="200" cy="130" r="55" fill="%231DBF73" opacity="0.3"/><path d="M120 200 L280 200 L260 260 L140 260 Z" fill="%23FBA457" opacity="0.7"/><rect x="165" y="70" width="70" height="50" fill="%23FFFFFF" rx="12" opacity="0.9"/></svg>');
+      background-size: cover;
+      animation: fadeIn 0.7s ease-out;
+      transition: transform 0.4s ease;
+    }
+
+    .hero-right:hover {
+      transform: scale(1.01);
+    }
+
+    /* ===== Секции общие ===== */
+    .section {
+      padding: 70px 0 60px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .section-header h2 {
+      font-size: 32px;
+      font-weight: 700;
+      color: #222222;
+      position: relative;
+      display: inline-block;
+    }
+
+    .section-header h2::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 0;
+      width: 50px;
+      height: 3px;
+      background: #1DBF73;
+      border-radius: 4px;
+    }
+
+    .view-all {
+      color: #1DBF73;
+      text-decoration: none;
+      font-weight: 600;
+      transition: 0.2s;
+    }
+
+    .view-all:hover {
+      color: #149a5c;
+      transform: translateX(4px);
+      display: inline-block;
+    }
+
+    /* Сетка 3 колонки */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+    }
+
+    /* Карточка ворка */
+    .work-card {
+      background: white;
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+      transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      border: 1px solid #eef2f6;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .work-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 24px 36px -12px rgba(0, 0, 0, 0.15);
+      border-color: #1DBF73;
+    }
+
+    .card-avatar {
+      width: 56px;
+      height: 56px;
+      background: #1DBF73;
+      border-radius: 60px;
+      margin-bottom: 16px;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="40" r="20" fill="%23222"/><path d="M25 80 Q50 65 75 80" stroke="%23FBA457" fill="none" stroke-width="4"/></svg>');
+      background-size: cover;
+      transition: transform 0.2s;
+    }
+
+    .work-card:hover .card-avatar {
+      transform: scale(1.02);
+    }
+
+    .work-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #222222;
+    }
+
+    .work-desc {
+      color: #5a6a7e;
+      line-height: 1.5;
+      margin-bottom: 20px;
+      font-size: 14px;
+      flex: 1;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid #1DBF73;
+      padding: 8px 20px;
+      border-radius: 40px;
+      color: #1DBF73;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.25s ease;
+      text-align: center;
+      cursor: pointer;
+      align-self: flex-start;
+    }
+
+    .btn-outline:hover {
+      background: #1DBF73;
+      color: white;
+      transform: scale(0.96);
+      box-shadow: 0 4px 12px rgba(29, 191, 115, 0.3);
+    }
+
+    /* Фрилансеры */
+    .freelancer-card {
+      background: white;
+      border-radius: 24px;
+      padding: 24px;
+      border: 1px solid #eef2f6;
+      transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .freelancer-card:hover {
+      border-color: #1DBF73;
+      transform: translateY(-6px);
+      box-shadow: 0 20px 28px -12px rgba(0, 0, 0, 0.12);
+    }
+
+    .freelancer-top {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .freelancer-avatar {
+      width: 150px;
+      height: 150px;
+      background: #FBA457;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="45" r="22" fill="%23222"/><rect x="35" y="70" width="30" height="20" fill="%231DBF73" rx="8"/></svg>');
+      background-size: cover;
+      transition: transform 0.25s;
+    }
+
+    .freelancer-card:hover .freelancer-avatar {
+      transform: scale(1.02);
+    }
+
+    .freelancer-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .freelancer-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #222222;
+      margin-bottom: 6px;
+    }
+
+    .freelancer-role {
+      color: #5a6a7e;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .projects-count {
+      font-size: 14px;
+      color: #1DBF73;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .rating-stars {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .star {
+      color: #FBA457;
+      font-size: 18px;
+      letter-spacing: 2px;
+    }
+
+    .freelancer-card .btn-outline {
+      margin-top: 20px;
+      width: 100%;
+      text-align: center;
+      align-self: stretch;
+    }
+
+    /* 3 шага без фона */
+    .how-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 40px;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .how-item {
+      flex: 1;
+      min-width: 220px;
+      background: transparent;
+      padding: 0;
+      transition: transform 0.2s;
+    }
+
+    .how-item:hover {
+      transform: translateY(-6px);
+    }
+
+    .how-icon {
+      width: 64px;
+      height: 64px;
+      background: #F2F0FE;
+      border-radius: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      transition: all 0.2s;
+    }
+
+    .how-item:hover .how-icon {
+      background: #e5e2fc;
+      transform: scale(1.02);
+    }
+
+    .how-item h3 {
+      font-size: 22px;
+      margin-bottom: 16px;
+      color: #222222;
+    }
+
+    .how-item p {
+      color: #5a6a7e;
+      line-height: 1.5;
+    }
+
+    /* жёлтый градиент на всю ширину */
+    .help-business-full {
+      width: 100%;
+      background: linear-gradient(135deg, #E5A700, #FECD00, #E4AA00);
+      margin: 60px 0 0;
+      padding: 0;
+      transition: all 0.3s;
+    }
+
+    .help-business-content {
+      min-height: 720px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .help-business-inner {
+      width: 70%;
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 60px;
+      padding: 80px 0;
+    }
+
+    .help-left h2 {
+      font-size: 42px;
+      margin-bottom: 24px;
+      color: #222222;
+      font-weight: 800;
+    }
+
+    .help-list {
+      list-style: none;
+      margin: 28px 0;
+    }
+
+    .help-list li {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-weight: 500;
+      font-size: 18px;
+      color: #222222;
+    }
+
+    .help-list li::before {
+      content: "✓";
+      background: #1DBF73;
+      color: white;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .start-btn {
+      background: #222222;
+      padding: 14px 48px;
+      border-radius: 60px;
+      display: inline-block;
+      color: white;
+      text-decoration: none;
+      font-weight: 700;
+      margin-top: 16px;
+      transition: all 0.25s ease;
+    }
+
+    .start-btn:hover {
+      background: #000;
+      transform: scale(1.02);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .help-right {
+      flex: 0.9;
+      background: rgba(255,255,240,0.5);
+      height: 320px;
+      border-radius: 40px;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 240"><rect width="300" height="240" fill="%23FFF8E7" rx="28" opacity="0.9"/><circle cx="110" cy="100" r="45" fill="%23222222" opacity="0.8"/><rect x="190" y="80" width="70" height="60" fill="%231DBF73" rx="14" opacity="0.9"/></svg>');
+      background-size: cover;
+      transition: transform 0.3s;
+    }
+
+    .help-right:hover {
+      transform: scale(1.01);
+    }
+
+    /* Футер */
+    .footer {
+      background: #F2F0FE;
+      color: #222222;
+      padding: 60px 0 30px;
+      margin-top: 0;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 40px;
+    }
+
+    .footer-col h4 {
+      color: #222222;
+      margin-bottom: 20px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .footer-col a {
+      display: block;
+      color: #4a4a6a;
+      text-decoration: none;
+      margin-bottom: 12px;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+
+    .footer-col a:hover {
+      color: #1DBF73;
+      transform: translateX(4px);
+    }
+
+    .social-icons span {
+      font-size: 24px;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: all 0.2s;
+      display: inline-block;
+    }
+
+    .social-icons span:hover {
+      opacity: 1;
+      transform: translateY(-3px);
+      color: #1DBF73;
+    }
+
+    .copyright {
+      text-align: center;
+      margin-top: 50px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      font-size: 13px;
+      color: #5a5a7a;
+    }
+
+    /* Анимации */
+    @keyframes fadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    /* Адаптив */
+    @media (max-width: 1200px) {
+      .container, .header-inner, .help-business-inner {
+        width: 85%;
+      }
+      .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .container, .header-inner, .help-business-inner {
+        width: 90%;
+      }
+      .hero-left h1 {
+        font-size: 38px;
+      }
+      .header-inner {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .logo-area {
+        justify-content: space-between;
+      }
+      .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .help-business-inner {
+        flex-direction: column;
+        text-align: center;
+        padding: 60px 0;
+      }
+      .help-list li {
+        justify-content: center;
+      }
+      .freelancer-top {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .freelancer-info {
+        align-items: center;
+      }
+      .rating-stars {
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-grid {
+        flex-direction: column-reverse;
+      }
+      .hero-left {
+        max-width: 100%;
+      }
+      .section-header {
+        flex-direction: column;
+        gap: 12px;
+      }
+      .help-business-content {
+        min-height: auto;
+      }
+      .freelancer-avatar {
+        width: 120px;
+        height: 120px;
+      }
+      .header-hero-bg {
+        padding-top: 100px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header-hero-bg">
+  <header class="header" id="mainHeader">
+    <div class="header-inner">
+      <div class="logo-area">
+        <a href="#" class="logo">
+          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 50'%3E%3Ctext x='0' y='35' font-size='28' font-weight='800' fill='%23222222'%3Eworktap%3C/text%3E%3C/svg%3E" alt="WorkTap">
+        </a>
+        <div class="nav-links">
+          <a href="market.html">Биржа</a>
+          <a href="#">Ворки</a>
+          <a href="#">Конкурсы</a>
+          <a href="#" class="create-order-link">Создать заказ</a>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="auth-buttons">
+          <a href="#" class="login">Войти</a>
+          <a href="#" class="register">Регистрация</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-left">
+        <h1>Покупайте фриланс-услуги <br>в <span>два клика</span></h1>
+        <p class="hero-desc">Ворк — единица работы продавца, которую можно купить как товар в магазине</p>
+        <div class="search-bar">
+          <input type="text" placeholder="Что нужно сделать?">
+          <button>Найти</button>
+        </div>
+        <div class="rubrics-title">Выберите рубрику, чтобы начать</div>
+        <div class="rubric-buttons">
+          <a href="#" class="rubric-btn">Тексты и переводы</a>
+          <a href="#" class="rubric-btn">Разработка</a>
+          <a href="#" class="rubric-btn">Дизайн</a>
+          <a href="#" class="rubric-btn">Аудио, видео монтаж</a>
+          <a href="#" class="rubric-btn">SEO и оптимизация</a>
+          <a href="#" class="rubric-btn">Бизнес и жизнь</a>
+          <a href="#" class="rubric-btn">Соц сети и реклама</a>
+          <a href="#" class="rubric-btn">Все категории</a>
+        </div>
+      </div>
+      <div class="hero-right"></div>
+    </div>
+  </section>
+</div>
+
+<main>
+  <div class="container">
+    <section class="section">
+      <div class="section-header">
+        <h2>Актуальные ворки</h2>
+        <a href="#" class="view-all">Смотреть все ворки →</a>
+      </div>
+      <div class="cards-grid">
+        <div class="work-card"><div class="card-avatar"></div><div class="work-title">Сделать дизайн интернет-магазина</div><div class="work-desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam sed leo at hendrerit dictum diam, enim.</div><a href="#" class="btn-outline">Посмотреть</a></div>
+        <div class="work-card"><div class="card-avatar"></div><div class="work-title">Верстка landing page</div><div class="work-desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam sed leo at hendrerit dictum diam, enim.</div><a href="#" class="btn-outline">Посмотреть</a></div>
+        <div class="work-card"><div class="card-avatar"></div><div class="work-title">Сделать дизайн сайта-каталога и посадить на WP</div><div class="work-desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam sed leo at hendrerit dictum diam.</div><a href="#" class="btn-outline">Посмотреть</a></div>
+        <div class="work-card"><div class="card-avatar"></div><div class="work-title">Продвижение instagram</div><div class="work-desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam sed leo at hendrerit dictum diam, enim.</div><a href="#" class="btn-outline">Посмотреть</a></div>
+        <div class="work-card"><div class="card-avatar"></div><div class="work-title">Срочно! Нужен веб дизайнер!</div><div class="work-desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam sed leo at hendrerit dictum diam, enim.</div><a href="#" class="btn-outline">Посмотреть</a></div>
+        <div class="work-card"><div class="card-avatar"></div><div class="work-title">Разработать телеграм-бота</div><div class="work-desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam sed leo at hendrerit dictum diam.</div><a href="#" class="btn-outline">Посмотреть</a></div>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top: 0;">
+      <div class="section-header">
+        <h2>Топ фрилансеров</h2>
+        <a href="#" class="view-all">Посмотреть всех ТОП фрилансеров →</a>
+      </div>
+      <div class="cards-grid">
+        <div class="freelancer-card"><div class="freelancer-top"><div class="freelancer-avatar"></div><div class="freelancer-info"><div class="freelancer-name">Марина Королёва</div><div class="freelancer-role">Разработчик PHP</div><div class="projects-count">Выполнено проектов: 65</div><div class="rating-stars"><span class="star">★★★★★</span></div></div></div><a href="#" class="btn-outline">Написать</a></div>
+        <div class="freelancer-card"><div class="freelancer-top"><div class="freelancer-avatar"></div><div class="freelancer-info"><div class="freelancer-name">Семён Сергеев</div><div class="freelancer-role">Копирайтер</div><div class="projects-count">Выполнено проектов: 104</div><div class="rating-stars"><span class="star">★★★★☆</span></div></div></div><a href="#" class="btn-outline">Написать</a></div>
+        <div class="freelancer-card"><div class="freelancer-top"><div class="freelancer-avatar"></div><div class="freelancer-info"><div class="freelancer-name">Ангелина Сорокина</div><div class="freelancer-role">Дизайнер сайтов</div><div class="projects-count">Выполнено проектов: 25</div><div class="rating-stars"><span class="star">★★★★★</span></div></div></div><a href="#" class="btn-outline">Написать</a></div>
+        <div class="freelancer-card"><div class="freelancer-top"><div class="freelancer-avatar"></div><div class="freelancer-info"><div class="freelancer-name">Никита Зайцев</div><div class="freelancer-role">Маркетолог</div><div class="projects-count">Выполнено проектов: 144</div><div class="rating-stars"><span class="star">★★★★☆</span></div></div></div><a href="#" class="btn-outline">Написать</a></div>
+        <div class="freelancer-card"><div class="freelancer-top"><div class="freelancer-avatar"></div><div class="freelancer-info"><div class="freelancer-name">Наталья Захарова</div><div class="freelancer-role">Motion дизайнер</div><div class="projects-count">Выполнено проектов: 71</div><div class="rating-stars"><span class="star">★★★★★</span></div></div></div><a href="#" class="btn-outline">Написать</a></div>
+        <div class="freelancer-card"><div class="freelancer-top"><div class="freelancer-avatar"></div><div class="freelancer-info"><div class="freelancer-name">Дмитрий Волков</div><div class="freelancer-role">SEO специалист</div><div class="projects-count">Выполнено проектов: 52</div><div class="rating-stars"><span class="star">★★★★☆</span></div></div></div><a href="#" class="btn-outline">Написать</a></div>
+      </div>
+    </section>
+
+    <section class="section" style="padding-bottom: 40px;">
+      <div class="section-header">
+        <h2>Как решать задачи на WorkTap?</h2>
+        <span style="color: #5a6a7e;">Идеально подходит для бизнеса и частных лиц.</span>
+      </div>
+      <div class="how-grid">
+        <div class="how-item"><div class="how-icon">📦</div><h3>Выберите услугу</h3><p>В супермаркете WorkTap представлен широкий выбор услуг от квалифицированных специалистов.</p></div>
+        <div class="how-item"><div class="how-icon">💳</div><h3>Оплатите</h3><p>Деньги будут перечислены продавцу после того, как он выполнит работу, и вы её одобрите.</p></div>
+        <div class="how-item"><div class="how-icon">🏆</div><h3>Получите результат</h3><p>Наш супермаркет гарантирует вам возврат средств в полном объёме в случае невыполнения заказа.</p></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="help-business-full">
+    <div class="help-business-content">
+      <div class="help-business-inner">
+        <div class="help-left">
+          <h2>Как WorkTap помогает бизнесу?</h2>
+          <ul class="help-list">
+            <li>Оплачивайте с р/с или карты компании</li>
+            <li>Экономите до 67% бюджета на франшизу</li>
+            <li>Экономите до 75% времени на решения фриланса задач</li>
+          </ul>
+          <p style="font-weight: 500; font-size: 18px;">WorkTap — быстро, просто и безопасно!</p>
+          <a href="#" class="start-btn">Начать!</a>
+        </div>
+        <div class="help-right"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col"><h4>Топ категории</h4><a href="#">Тексты и переводы</a><a href="#">Разработка</a><a href="#">Дизайн</a><a href="#">Аудио, видео монтаж</a><a href="#">Соц сети и реклама</a><a href="#">Бизнес и жизнь</a><a href="#">SEO и оптимизация</a></div>
+        <div class="footer-col"><h4>О Проекте</h4><a href="#">О нас</a><a href="#">Как это работает</a><a href="#">Политика Приватности</a><a href="#">Правила Пользования</a><a href="#">Пресса о нас</a></div>
+        <div class="footer-col"><h4>Поддержка</h4><a href="#">Контакты</a><a href="#">Политика безопасности</a><a href="#">FAQ</a></div>
+        <div class="footer-col"><h4>Follow</h4><div class="social-icons"><span>📘</span><span>🐦</span><span>📸</span></div></div>
+      </div>
+      <div class="copyright">Copyright © 2021 | WorkTap — Worktap.KZ. All Rights Reserved</div>
+    </div>
+  </footer>
+</main>
+
+<script>
+  // Анимация закреплённого хедера при скролле
+  const header = document.getElementById('mainHeader');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 20) {
+      header.classList.add('scrolled');
+    } else {
+      header.classList.remove('scrolled');
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,415 @@
+<%- include('partials/header', { title: title, currentPath: '/profile' }) %>
+
+<main>
+  <div class="container profile-section">
+    <div class="profile-grid">
+      <!-- Левая колонка -->
+      <div class="profile-left">
+        <div class="avatar-card">
+          <div class="avatar-img" style="background-image: url('<%= profile.avatar_url || 'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"45\" r=\"22\" fill=\"%231DBF73\"/><text x=\"50\" y=\"55\" text-anchor=\"middle\" fill=\"white\" font-size=\"28\">👤</text></svg>' %>');"></div>
+          <h2><%= profile.full_name %></h2>
+          <div class="role"><%= profile.specialization || (profile.role === 'freelancer' ? 'Фрилансер' : 'Заказчик') %></div>
+          <div class="rating-stars">
+            <% const rating = Math.round(profile.rating || 0); %>
+            <% for (let i = 1; i <= 5; i++) { %>
+              <span class="star"><%= i <= rating ? '★' : '☆' %></span>
+            <% } %>
+            <span style="margin-left: 8px;"><%= profile.rating ? profile.rating.toFixed(1) : 'Нет оценок' %></span>
+          </div>
+          <div class="info-row"><span class="info-label">Выполнено проектов: </span><span class="info-value"><%= profile.completed_projects || 0 %></span></div>
+          <div class="info-row"><span class="info-label">На сайте с: </span><span class="info-value"><%= new Date(profile.on_site_since).toLocaleDateString('ru-RU') %></span></div>
+          <% if (profile.role !== 'client') { %>
+            <div class="info-row"><span class="info-label">Заработано: </span><span class="info-value"><%= new Intl.NumberFormat('ru-RU').format(profile.total_earned || 0) %> ₽</span></div>
+          <% } %>
+
+          <% if (!isOwnProfile && profile.role !== 'client') { %>
+            <div class="contact-buttons">
+              <a href="/messages?user=<%= profile.id %>" class="btn-green">Написать</a>
+              <a href="#" class="btn-outline" onclick="addToFavorites(<%= profile.id %>)">В избранное</a>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Правая колонка -->
+      <div class="profile-right">
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="about">О себе</button>
+          <button class="tab-btn" data-tab="portfolio">Портфолио</button>
+          <button class="tab-btn" data-tab="reviews">Отзывы (<%= reviews.length %>)</button>
+          <% if (isOwnProfile) { %>
+            <button class="tab-btn" data-tab="settings">Настройки</button>
+          <% } %>
+        </div>
+
+        <!-- О себе -->
+        <div id="about" class="tab-content active">
+          <div class="bio-block">
+            <h3>Обо мне</h3>
+            <div class="bio-text">
+              <p><%= profile.bio || 'Пользователь пока не заполнил информацию о себе.' %></p>
+            </div>
+          </div>
+
+          <div class="bio-block">
+            <h3>Навыки и технологии</h3>
+            <div class="skills-list">
+              <% if (skills && skills.length) { %>
+                <% skills.forEach(skill => { %>
+                  <span class="skill-tag"><%= skill.name %></span>
+                <% }) %>
+              <% } else { %>
+                <span class="skill-tag">Навыки не указаны</span>
+              <% } %>
+            </div>
+          </div>
+
+          <div class="stats-cards">
+            <div class="stat-card">
+              <div class="stat-number"><%= profile.completed_projects || 0 %></div>
+              <div>Выполнено работ</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number"><%= Math.round((profile.rating || 0) * 20) %>%</div>
+              <div>Положительных отзывов</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number"><%= reviews.filter(r => r.rating >= 4).length %></div>
+              <div>Хороших отзывов</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Портфолио -->
+        <div id="portfolio" class="tab-content">
+          <div class="bio-block">
+            <div style="display:flex; justify-content:space-between; gap:16px; align-items:center; flex-wrap:wrap;">
+              <h3>Портфолио работ</h3>
+              <% if (isOwnProfile) { %>
+                <button class="btn-green" type="button" onclick="togglePortfolioForm()">Добавить работу</button>
+              <% } %>
+            </div>
+
+            <% if (isOwnProfile) { %>
+              <form id="portfolioForm" style="display:none; margin-top:20px; padding:20px; background:#F7F6FF; border-radius:24px;">
+                <div id="portfolioError" style="background:#fee2e2; color:#dc2626; padding:10px 14px; border-radius:16px; margin-bottom:14px; display:none;"></div>
+                <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:16px;">
+                  <div class="form-group">
+                    <label>Название работы</label>
+                    <input id="portfolioTitle" type="text" required style="width:100%; padding:12px 16px; border-radius:40px; border:1.5px solid #e2e8f0;">
+                  </div>
+                  <div class="form-group">
+                    <label>Ссылка на проект</label>
+                    <input id="portfolioProjectUrl" type="url" placeholder="https://..." style="width:100%; padding:12px 16px; border-radius:40px; border:1.5px solid #e2e8f0;">
+                  </div>
+                  <div class="form-group" style="grid-column:1 / -1;">
+                    <label>Ссылка на изображение</label>
+                    <input id="portfolioImageUrl" type="url" placeholder="https://..." style="width:100%; padding:12px 16px; border-radius:40px; border:1.5px solid #e2e8f0;">
+                  </div>
+                  <div class="form-group" style="grid-column:1 / -1;">
+                    <label>Описание</label>
+                    <textarea id="portfolioDescription" rows="4" style="width:100%; padding:12px 16px; border-radius:20px; border:1.5px solid #e2e8f0; font-family:inherit; resize:vertical;"></textarea>
+                  </div>
+                </div>
+                <button class="btn-green" type="submit" style="margin-top:16px;">Сохранить работу</button>
+              </form>
+            <% } %>
+
+            <% if (portfolios && portfolios.length) { %>
+              <div class="portfolio-grid">
+                <% portfolios.forEach(portfolio => { %>
+                  <div class="portfolio-item">
+                    <div class="portfolio-preview" <% if (portfolio.image_url) { %>style="background-image:url('<%= portfolio.image_url %>'); background-size:cover; background-position:center;"<% } %>>
+                      <%= portfolio.image_url ? '' : '📁' %>
+                    </div>
+                    <div class="portfolio-title">
+                      <%= portfolio.title %>
+                      <% if (portfolio.description) { %>
+                        <div style="font-weight:400; color:#5a6a7e; font-size:13px; margin-top:8px;"><%= portfolio.description %></div>
+                      <% } %>
+                      <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+                        <% if (portfolio.project_url) { %>
+                          <a href="<%= portfolio.project_url %>" target="_blank" class="btn-outline" style="padding:8px 12px;">Открыть</a>
+                        <% } %>
+                        <% if (isOwnProfile) { %>
+                          <button type="button" class="btn-outline" onclick="deletePortfolio(<%= portfolio.id %>)" style="padding:8px 12px; color:#DA4A54;">Удалить</button>
+                        <% } %>
+                      </div>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <div class="empty-message" style="padding: 40px;">Портфолио пока пусто</div>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- Отзывы -->
+        <div id="reviews" class="tab-content">
+          <div class="bio-block">
+            <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+              <button class="review-filter-btn active" data-filter="positive" style="background:transparent; border:none; font-weight:600; cursor:pointer; padding:8px 16px; border-radius:40px;">👍 Положительные (<%= reviews.filter(r => r.rating >= 4).length %>)</button>
+              <button class="review-filter-btn" data-filter="negative" style="background:transparent; border:none; font-weight:600; cursor:pointer; padding:8px 16px; border-radius:40px;">👎 Отрицательные (<%= reviews.filter(r => r.rating < 4).length %>)</button>
+            </div>
+
+            <div id="positiveReviews" class="reviews-list">
+              <% reviews.filter(r => r.rating >= 4).forEach(review => { %>
+                <div class="review-card">
+                  <div class="review-header">
+                    <span class="reviewer-name"><%= review.reviewer_name %></span>
+                    <span class="review-rating">
+                      <% for (let i = 1; i <= 5; i++) { %>
+                        <%= i <= review.rating ? '★' : '☆' %>
+                      <% } %>
+                    </span>
+                  </div>
+                  <div class="review-text"><%= review.comment || 'Пользователь оставил оценку без комментария.' %></div>
+                  <div style="font-size: 12px; color: #5a6a7e; margin-top: 12px;"><%= new Date(review.created_at).toLocaleDateString('ru-RU') %></div>
+                </div>
+              <% }) %>
+              <% if (reviews.filter(r => r.rating >= 4).length === 0) { %>
+                <div class="empty-message" style="padding: 20px;">Положительных отзывов пока нет</div>
+              <% } %>
+            </div>
+
+            <div id="negativeReviews" class="reviews-list" style="display:none;">
+              <% reviews.filter(r => r.rating < 4).forEach(review => { %>
+                <div class="review-card">
+                  <div class="review-header">
+                    <span class="reviewer-name"><%= review.reviewer_name %></span>
+                    <span class="review-rating">
+                      <% for (let i = 1; i <= 5; i++) { %>
+                        <%= i <= review.rating ? '★' : '☆' %>
+                      <% } %>
+                    </span>
+                  </div>
+                  <div class="review-text"><%= review.comment || 'Пользователь оставил оценку без комментария.' %></div>
+                  <div style="font-size: 12px; color: #5a6a7e; margin-top: 12px;"><%= new Date(review.created_at).toLocaleDateString('ru-RU') %></div>
+                </div>
+              <% }) %>
+              <% if (reviews.filter(r => r.rating < 4).length === 0) { %>
+                <div class="empty-message" style="padding: 20px;">Отрицательных отзывов нет</div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <% if (isOwnProfile) { %>
+          <div id="settings" class="tab-content">
+            <div class="bio-block">
+              <h3>Редактирование профиля</h3>
+              <p style="color:#5a6a7e; margin-bottom: 24px;">Email и пароль меняются только после ввода текущего пароля. Телефон и email должны быть уникальными.</p>
+
+              <div id="profileError" style="background:#fee2e2; color:#dc2626; padding:12px 18px; border-radius:20px; margin-bottom:18px; display:none;"></div>
+              <div id="profileSuccess" style="background:#d1fae5; color:#059669; padding:12px 18px; border-radius:20px; margin-bottom:18px; display:none;"></div>
+
+              <form id="profileSettingsForm">
+                <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+                  <div class="form-group">
+                    <label>Имя и фамилия</label>
+                    <input type="text" id="settingsFullName" value="<%= profile.full_name || '' %>" required style="width:100%; padding:14px 18px; border-radius:40px; border:1.5px solid #e2e8f0;">
+                  </div>
+                  <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="settingsEmail" value="<%= profile.email || '' %>" required style="width:100%; padding:14px 18px; border-radius:40px; border:1.5px solid #e2e8f0;">
+                  </div>
+                  <div class="form-group">
+                    <label>Телефон</label>
+                    <input type="tel" id="settingsPhone" value="<%= profile.phone || '' %>" placeholder="+7 700 123 4567" style="width:100%; padding:14px 18px; border-radius:40px; border:1.5px solid #e2e8f0;">
+                  </div>
+                  <div class="form-group">
+                    <label>Ссылка на аватар</label>
+                    <input type="url" id="settingsAvatar" value="<%= profile.avatar_url || '' %>" placeholder="https://..." style="width:100%; padding:14px 18px; border-radius:40px; border:1.5px solid #e2e8f0;">
+                  </div>
+                  <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Специализация</label>
+                    <input type="text" id="settingsSpecialization" value="<%= profile.specialization || '' %>" placeholder="Например: Frontend-разработчик" style="width:100%; padding:14px 18px; border-radius:40px; border:1.5px solid #e2e8f0;">
+                  </div>
+                  <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>О себе</label>
+                    <textarea id="settingsBio" rows="5" placeholder="Расскажите о своем опыте, подходе и сильных сторонах" style="width:100%; padding:14px 18px; border-radius:24px; border:1.5px solid #e2e8f0; font-family:inherit; resize:vertical;"><%= profile.bio || '' %></textarea>
+                  </div>
+                </div>
+
+                <div style="margin-top: 28px; padding: 22px; background:#F7F6FF; border-radius:24px;">
+                  <h4 style="margin-bottom: 16px;">Безопасность</h4>
+                  <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+                    <div class="form-group">
+                      <label>Текущий пароль</label>
+                      <input type="password" id="settingsCurrentPassword" autocomplete="current-password" placeholder="Нужен для смены email или пароля" style="width:100%; padding:14px 18px; border-radius:40px; border:1.5px solid #e2e8f0;">
+                    </div>
+                    <div class="form-group">
+                      <label>Новый пароль</label>
+                      <input type="password" id="settingsNewPassword" autocomplete="new-password" placeholder="Оставьте пустым, если не меняете" style="width:100%; padding:14px 18px; border-radius:40px; border:1.5px solid #e2e8f0;">
+                    </div>
+                  </div>
+                </div>
+
+                <button type="submit" class="btn-green" style="margin-top: 24px; padding: 14px 28px;">Сохранить изменения</button>
+              </form>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Переключение табов
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabId = btn.dataset.tab;
+      tabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      tabContents.forEach(content => content.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+    });
+  });
+
+  // Переключение отзывов
+  const filterBtns = document.querySelectorAll('.review-filter-btn');
+  const positiveDiv = document.getElementById('positiveReviews');
+  const negativeDiv = document.getElementById('negativeReviews');
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filter = btn.dataset.filter;
+      if (filter === 'positive') {
+        positiveDiv.style.display = 'flex';
+        negativeDiv.style.display = 'none';
+      } else {
+        positiveDiv.style.display = 'none';
+        negativeDiv.style.display = 'flex';
+      }
+    });
+  });
+
+  const settingsForm = document.getElementById('profileSettingsForm');
+  if (settingsForm) {
+    const profileError = document.getElementById('profileError');
+    const profileSuccess = document.getElementById('profileSuccess');
+
+    settingsForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      profileError.style.display = 'none';
+      profileSuccess.style.display = 'none';
+
+      const payload = {
+        full_name: document.getElementById('settingsFullName').value.trim(),
+        email: document.getElementById('settingsEmail').value.trim(),
+        phone: document.getElementById('settingsPhone').value.trim(),
+        avatar_url: document.getElementById('settingsAvatar').value.trim(),
+        specialization: document.getElementById('settingsSpecialization').value.trim(),
+        bio: document.getElementById('settingsBio').value.trim(),
+        current_password: document.getElementById('settingsCurrentPassword').value,
+        new_password: document.getElementById('settingsNewPassword').value
+      };
+
+      const submitBtn = settingsForm.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Сохранение...';
+
+      try {
+        const response = await fetch('/api/profile', {
+          method: 'PATCH',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+
+        if (data.success) {
+          profileSuccess.textContent = 'Данные профиля сохранены';
+          profileSuccess.style.display = 'block';
+          document.getElementById('settingsCurrentPassword').value = '';
+          document.getElementById('settingsNewPassword').value = '';
+          setTimeout(() => window.location.reload(), 700);
+        } else {
+          profileError.textContent = data.error || 'Не удалось сохранить профиль';
+          profileError.style.display = 'block';
+        }
+      } catch (err) {
+        profileError.textContent = 'Ошибка соединения с сервером';
+        profileError.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Сохранить изменения';
+      }
+    });
+  }
+
+  function togglePortfolioForm() {
+    const form = document.getElementById('portfolioForm');
+    if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  }
+
+  const portfolioForm = document.getElementById('portfolioForm');
+  if (portfolioForm) {
+    portfolioForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const error = document.getElementById('portfolioError');
+      error.style.display = 'none';
+
+      const payload = {
+        title: document.getElementById('portfolioTitle').value.trim(),
+        description: document.getElementById('portfolioDescription').value.trim(),
+        image_url: document.getElementById('portfolioImageUrl').value.trim(),
+        project_url: document.getElementById('portfolioProjectUrl').value.trim()
+      };
+
+      const response = await fetch('/api/portfolio', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (data.success) {
+        window.location.reload();
+      } else {
+        error.textContent = data.error || 'Не удалось сохранить работу';
+        error.style.display = 'block';
+      }
+    });
+  }
+
+  async function deletePortfolio(id) {
+    if (!confirm('Удалить эту работу из портфолио?')) return;
+    const response = await fetch(`/api/portfolio/${id}`, {method: 'DELETE'});
+    const data = await response.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.error || 'Не удалось удалить работу');
+    }
+  }
+
+  function addToFavorites(freelancerId) {
+    fetch('/api/favorites', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ freelancer_id: freelancerId })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        alert('✅ Добавлено в избранное!');
+      } else {
+        alert('❌ Ошибка: ' + data.error);
+      }
+    })
+    .catch(err => alert('Ошибка соединения'));
+  }
+
+  function showPortfolioModal(portfolioId) {
+    alert('Просмотр портфолио #' + portfolioId);
+  }
+</script>
+
+<%- include('partials/footer') %>

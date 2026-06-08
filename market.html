@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>WorkTap — Биржа проектов</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #F6FAFD;
+      color: #222222;
+      line-height: 1.4;
+    }
+
+    /* основной контент 70% ширины, отступы по 15% */
+    .container {
+      width: 70%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+    .container-title {
+      width: 70%;
+      height: 100%;
+      margin: 0 auto;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ===== ЗАКРЕПЛЁННЫЙ ХЕДЕР С АНИМАЦИЕЙ (как на главной) ===== */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      padding: 20px 0;
+      transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      background-color: #F7F6FF;
+      backdrop-filter: blur(0px);
+    }
+
+    .header.scrolled {
+      padding: 12px 0;
+      background-color: rgba(247, 246, 255, 0.96);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    }
+
+    /* отступ под фиксированный хедер */
+    .page-top-padding {
+      padding-top: 88px;
+      background-color: #F7F6FF;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+      width: 70%;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 48px;
+    }
+
+    .logo img {
+      height: 36px;
+      width: auto;
+      display: block;
+      transition: transform 0.2s ease;
+    }
+
+    .logo:hover img {
+      transform: scale(1.02);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: #222222;
+      font-weight: 500;
+      transition: 0.2s;
+      font-size: 16px;
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0%;
+      height: 2px;
+      background: #1DBF73;
+      transition: width 0.25s ease;
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    .nav-links a:hover {
+      color: #1DBF73;
+    }
+
+    .create-order-link {
+      background: transparent;
+      padding: 0;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .auth-buttons {
+      display: flex;
+      gap: 16px;
+    }
+
+    .auth-buttons a {
+      text-decoration: none;
+      font-weight: 600;
+      padding: 8px 20px;
+      border-radius: 40px;
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+
+    .login {
+      background: #1DBF73;
+      color: white !important;
+      border: none;
+      box-shadow: 0 2px 6px rgba(29, 191, 115, 0.2);
+    }
+
+    .login:hover {
+      background: #179e5f;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(29, 191, 115, 0.3);
+    }
+
+    .register {
+      background: #F2F0FE;
+      color: #1DBF73;
+      border: none;
+    }
+
+    .register:hover {
+      background: #e5e2fc;
+      transform: translateY(-2px);
+    }
+
+    /* ===== БИРЖА — основной контент ===== */
+    .exchange-hero {
+      background: url('/images/bg.png');
+      background-size: cover;
+      height: 720px;
+      padding: 48px 0 32px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .exchange-title h1 {
+      font-size: 42px;
+      font-weight: 800;
+      color: #222222;
+      margin-bottom: 12px;
+    }
+
+    .exchange-title p {
+      font-size: 18px;
+      color: #5a6a7e;
+      max-width: 600px;
+    }
+
+    /* фильтры */
+    .filters-section {
+      padding: 32px 0 24px;
+      background: white;
+      border-bottom: 1px solid #eef2f6;
+    }
+
+    .filters-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 24px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .filter-group label {
+      font-weight: 600;
+      font-size: 14px;
+      color: #4a5b6e;
+    }
+
+    .filter-select, .filter-input {
+      padding: 10px 16px;
+      border-radius: 40px;
+      border: 1.5px solid #e2e8f0;
+      background: white;
+      font-size: 14px;
+      min-width: 160px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-select:hover, .filter-input:hover {
+      border-color: #1DBF73;
+    }
+
+    .category-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .chip {
+      background: #F2F0FE;
+      padding: 6px 18px;
+      border-radius: 40px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #222;
+    }
+
+    .chip.active {
+      background: #1DBF73;
+      color: white;
+    }
+
+    .chip:hover {
+      background: #1DBF73;
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    /* статистика */
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 28px 0 20px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .projects-count-badge {
+      font-weight: 600;
+      background: #F2F0FE;
+      padding: 8px 20px;
+      border-radius: 40px;
+      font-size: 14px;
+    }
+
+    .sort-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .sort-btn {
+      background: transparent;
+      border: 1px solid #dce5ef;
+      padding: 8px 18px;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: 0.2s;
+      font-weight: 500;
+    }
+
+    .sort-btn.active {
+      background: #1DBF73;
+      border-color: #1DBF73;
+      color: white;
+    }
+
+    /* сетка проектов */
+    .projects-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      margin: 32px 0 60px;
+    }
+
+    .project-card {
+      background: white;
+      border-radius: 28px;
+      padding: 28px 32px;
+      border: 1px solid #eef2f6;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .project-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 30px -12px rgba(0, 0, 0, 0.08);
+      border-color: #1DBF73;
+    }
+
+    .project-info {
+      flex: 2;
+      min-width: 240px;
+    }
+
+    .project-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #222;
+    }
+
+    .project-desc {
+      color: #5a6a7e;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 14px;
+      max-width: 600px;
+    }
+
+    .project-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      font-size: 13px;
+      color: #4f6b8a;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .project-budget {
+      font-weight: 800;
+      font-size: 24px;
+      color: #1DBF73;
+      min-width: 140px;
+      text-align: right;
+    }
+
+    .project-budget small {
+      font-size: 13px;
+      font-weight: normal;
+      color: #5a6a7e;
+    }
+
+    .btn-green {
+      background: #1DBF73;
+      color: white;
+      padding: 12px 28px;
+      border-radius: 40px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: inline-block;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-green:hover {
+      background: #179e5f;
+      transform: scale(0.96);
+      box-shadow: 0 6px 12px rgba(29, 191, 115, 0.25);
+    }
+
+    .btn-outline-small {
+      background: transparent;
+      border: 1.5px solid #1DBF73;
+      padding: 8px 20px;
+      border-radius: 40px;
+      color: #1DBF73;
+      font-weight: 600;
+      text-decoration: none;
+      transition: 0.2s;
+    }
+
+    /* пагинация */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 40px 0 70px;
+    }
+
+    .page-link {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: white;
+      border: 1px solid #e2e8f0;
+      text-decoration: none;
+      color: #222;
+      font-weight: 500;
+      transition: 0.2s;
+    }
+
+    .page-link.active, .page-link:hover {
+      background: #1DBF73;
+      color: white;
+      border-color: #1DBF73;
+    }
+
+    /* футер */
+    .footer {
+      background: #F2F0FE;
+      color: #222222;
+      padding: 60px 0 30px;
+      margin-top: 40px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 40px;
+    }
+
+    .footer-col h4 {
+      color: #222222;
+      margin-bottom: 20px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .footer-col a {
+      display: block;
+      color: #4a4a6a;
+      text-decoration: none;
+      margin-bottom: 12px;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+
+    .footer-col a:hover {
+      color: #1DBF73;
+      transform: translateX(4px);
+    }
+
+    .social-icons {
+      display: flex;
+      gap: 20px;
+      margin-top: 12px;
+    }
+
+    .social-icons span {
+      font-size: 24px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .copyright {
+      text-align: center;
+      margin-top: 50px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      font-size: 13px;
+      color: #5a5a7a;
+    }
+
+    @media (max-width: 1200px) {
+      .container, .header-inner {
+        width: 85%;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .container, .header-inner {
+        width: 90%;
+      }
+      .project-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .project-budget {
+        text-align: left;
+      }
+      .header-inner {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .logo-area {
+        justify-content: space-between;
+      }
+      .nav-links {
+        flex-wrap: wrap;
+      }
+      .exchange-title h1 {
+        font-size: 32px;
+      }
+      .filters-grid {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .project-meta {
+        flex-direction: column;
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- фиксированный хедер (как на главной) -->
+<header class="header" id="mainHeader">
+  <div class="header-inner">
+    <div class="logo-area">
+      <a href="#" class="logo">
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 50'%3E%3Ctext x='0' y='35' font-size='28' font-weight='800' fill='%23222222'%3Eworktap%3C/text%3E%3C/svg%3E" alt="WorkTap">
+      </a>
+      <div class="nav-links">
+        <a href="#" style="color:#1DBF73; font-weight:600;">Биржа</a>
+        <a href="#">Ворки</a>
+        <a href="#">Конкурсы</a>
+        <a href="#" class="create-order-link">Создать заказ</a>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="auth-buttons">
+        <a href="#" class="login">Войти</a>
+        <a href="#" class="register">Регистрация</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="page-top-padding"></div>
+
+<main>
+  <!-- шапка биржи -->
+  <div class="exchange-hero">
+    <div class="container-title">
+      <div class="exchange-title">
+        <h1>Биржа проектов</h1>
+        <p>10,000+ проектов и подходящая работа для вас!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- фильтры -->
+  <div class="filters-section">
+    <div class="container">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>Категория</label>
+          <div class="category-chips" id="categoryChips">
+            <span data-cat="all" class="chip active">Все категории</span>
+            <span data-cat="design" class="chip">Дизайн</span>
+            <span data-cat="dev" class="chip">Разработка</span>
+            <span data-cat="text" class="chip">Тексты и переводы</span>
+            <span data-cat="seo" class="chip">SEO & оптимизация</span>
+            <span data-cat="audio" class="chip">Аудио/видео</span>
+            <span data-cat="smm" class="chip">Соцсети и реклама</span>
+          </div>
+        </div>
+        <div class="filter-group">
+          <label>Бюджет (₸)</label>
+          <input type="text" id="budgetFilter" class="filter-input" placeholder="от 10 000" style="width:140px">
+        </div>
+        <div class="filter-group">
+          <label>Статус</label>
+          <select id="statusFilter" class="filter-select">
+            <option value="all">Любой статус</option>
+            <option value="open">Открыт</option>
+            <option value="in_progress">В работе</option>
+            <option value="closed">Закрыт</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Сортировка</label>
+          <div class="sort-buttons" id="sortButtons">
+            <button data-sort="default" class="sort-btn active">По умолчанию</button>
+            <button data-sort="price_asc" class="sort-btn">Цена ↑</button>
+            <button data-sort="price_desc" class="sort-btn">Цена ↓</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="stats-row">
+      <div class="projects-count-badge" id="projectsCount">Найдено проектов: 8</div>
+      <div></div>
+    </div>
+
+    <!-- список проектов (динамический) -->
+    <div id="projectsList" class="projects-grid"></div>
+
+    <!-- пагинация -->
+    <div class="pagination" id="pagination"></div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-col"><h4>Топ категории</h4><a href="#">Тексты и переводы</a><a href="#">Разработка</a><a href="#">Дизайн</a><a href="#">Аудио, видео монтаж</a><a href="#">Соц сети и реклама</a><a href="#">Бизнес и жизнь</a><a href="#">SEO и оптимизация</a></div>
+      <div class="footer-col"><h4>О Проекте</h4><a href="#">О нас</a><a href="#">Как это работает</a><a href="#">Политика Приватности</a><a href="#">Правила Пользования</a><a href="#">Пресса о нас</a></div>
+      <div class="footer-col"><h4>Поддержка</h4><a href="#">Контакты</a><a href="#">Политика безопасности</a><a href="#">FAQ</a></div>
+      <div class="footer-col"><h4>Follow</h4><div class="social-icons"><span>📘</span><span>🐦</span><span>📸</span></div></div>
+    </div>
+    <div class="copyright">Copyright © 2021 | WorkTap — Worktap.KZ. All Rights Reserved</div>
+  </div>
+</footer>
+
+<script>
+  // Данные проектов (в стиле макета)
+  const projectsData = [
+    { id: 1, title: "Разработка интернет-магазина", desc: "Нужно сделать интернет-магазин на WooCommerce с кастомным дизайном", category: "dev", budget: 350000, status: "open", date: "2025-03-20" },
+    { id: 2, title: "Дизайн лендинга для стартапа", desc: "Красивый современный лендинг с анимацией и формами", category: "design", budget: 120000, status: "open", date: "2025-03-18" },
+    { id: 3, title: "SEO-продвижение интернет-магазина", desc: "Вывод в топ-10 по коммерческим запросам, оптимизация", category: "seo", budget: 250000, status: "in_progress", date: "2025-03-10" },
+    { id: 4, title: "Написание статей для блога", desc: "10 статей по 3000 символов на тему IT и бизнеса", category: "text", budget: 45000, status: "open", date: "2025-03-22" },
+    { id: 5, title: "Создание рекламных креативов", desc: "Баннеры, посты для Instagram и Telegram", category: "smm", budget: 80000, status: "open", date: "2025-03-19" },
+    { id: 6, title: "Монтаж видео-ролика", desc: "Нарезка, цветокоррекция, добавление субтитров", category: "audio", budget: 60000, status: "closed", date: "2025-03-05" },
+    { id: 7, title: "Верстка landing page", desc: "Адаптивная верстка по макету Figma, валидный код", category: "dev", budget: 55000, status: "open", date: "2025-03-21" },
+    { id: 8, title: "Разработка телеграм-бота", desc: "Бот для заказа услуг с интеграцией оплаты", category: "dev", budget: 180000, status: "open", date: "2025-03-17" },
+    { id: 9, title: "Аудит сайта и рекомендации", desc: "Технический аудит, юзабилити, стратегия", category: "seo", budget: 95000, status: "in_progress", date: "2025-03-12" },
+    { id: 10, title: "Перевод документации", desc: "Английский-русский, 50 страниц", category: "text", budget: 35000, status: "closed", date: "2025-03-01" }
+  ];
+
+  let currentCategory = "all";
+  let currentBudget = "";
+  let currentStatus = "all";
+  let currentSort = "default";
+  let currentPage = 1;
+  const itemsPerPage = 5;
+
+  function filterProjects() {
+    let filtered = [...projectsData];
+
+    if (currentCategory !== "all") {
+      filtered = filtered.filter(p => p.category === currentCategory);
+    }
+
+    if (currentStatus !== "all") {
+      filtered = filtered.filter(p => p.status === currentStatus);
+    }
+
+    if (currentBudget) {
+      const budgetNum = parseInt(currentBudget.replace(/[^\d]/g, ''));
+      if (!isNaN(budgetNum)) {
+        filtered = filtered.filter(p => p.budget >= budgetNum);
+      }
+    }
+
+    // сортировка
+    if (currentSort === "price_asc") {
+      filtered.sort((a,b) => a.budget - b.budget);
+    } else if (currentSort === "price_desc") {
+      filtered.sort((a,b) => b.budget - a.budget);
+    } else {
+      filtered.sort((a,b) => b.id - a.id);
+    }
+
+    return filtered;
+  }
+
+  function renderProjects() {
+    const filteredAll = filterProjects();
+    const totalItems = filteredAll.length;
+    document.getElementById('projectsCount').innerText = `Найдено проектов: ${totalItems}`;
+
+    const start = (currentPage - 1) * itemsPerPage;
+    const paginated = filteredAll.slice(start, start + itemsPerPage);
+
+    const container = document.getElementById('projectsList');
+    if (paginated.length === 0) {
+      container.innerHTML = `<div style="text-align:center; padding:60px; background:white; border-radius:28px;">Проектов не найдено</div>`;
+      return;
+    }
+
+    container.innerHTML = paginated.map(proj => {
+      let statusText = "";
+      let statusClass = "";
+      if (proj.status === "open") { statusText = "Открыт"; statusClass = "#1DBF73"; }
+      else if (proj.status === "in_progress") { statusText = "В работе"; statusClass = "#FBA457"; }
+      else { statusText = "Закрыт"; statusClass = "#DA4A54"; }
+
+      const budgetFormatted = proj.budget.toLocaleString('ru-RU');
+      return `
+        <div class="project-card">
+          <div class="project-info">
+            <div class="project-title">${proj.title}</div>
+            <div class="project-desc">${proj.desc}</div>
+            <div class="project-meta">
+              <span class="meta-item">📁 Категория: ${getCategoryName(proj.category)}</span>
+              <span class="meta-item" style="color:${statusClass};">⚫ ${statusText}</span>
+              <span class="meta-item">📅 До: ${proj.date}</span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div class="project-budget">${budgetFormatted} ₸ <small>тенге</small></div>
+            <a href="#" class="btn-green" style="margin-top:12px; display:inline-block;">Откликнуться</a>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // пагинация
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const paginationDiv = document.getElementById('pagination');
+    if (totalPages <= 1) {
+      paginationDiv.innerHTML = '';
+      return;
+    }
+    let pagesHtml = '';
+    for (let i = 1; i <= totalPages; i++) {
+      pagesHtml += `<a href="#" data-page="${i}" class="page-link ${i === currentPage ? 'active' : ''}">${i}</a>`;
+    }
+    paginationDiv.innerHTML = pagesHtml;
+
+    document.querySelectorAll('.page-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const page = parseInt(link.dataset.page);
+        if (!isNaN(page)) {
+          currentPage = page;
+          renderProjects();
+          window.scrollTo({ top: 400, behavior: 'smooth' });
+        }
+      });
+    });
+  }
+
+  function getCategoryName(cat) {
+    const map = { design: "Дизайн", dev: "Разработка", text: "Тексты и переводы", seo: "SEO & оптимизация", audio: "Аудио/видео", smm: "Соцсети и реклама" };
+    return map[cat] || "Другое";
+  }
+
+  // обработчики фильтров
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      currentCategory = chip.dataset.cat;
+      currentPage = 1;
+      renderProjects();
+    });
+  });
+
+  document.getElementById('statusFilter').addEventListener('change', (e) => {
+    currentStatus = e.target.value;
+    currentPage = 1;
+    renderProjects();
+  });
+
+  let budgetTimeout;
+  document.getElementById('budgetFilter').addEventListener('input', (e) => {
+    clearTimeout(budgetTimeout);
+    budgetTimeout = setTimeout(() => {
+      currentBudget = e.target.value;
+      currentPage = 1;
+      renderProjects();
+    }, 400);
+  });
+
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentSort = btn.dataset.sort;
+      currentPage = 1;
+      renderProjects();
+    });
+  });
+
+  // инициализация
+  renderProjects();
+
+  // хедер анимация
+  const header = document.getElementById('mainHeader');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 20) header.classList.add('scrolled');
+    else header.classList.remove('scrolled');
+  });
+</script>
+</body>
+</html>

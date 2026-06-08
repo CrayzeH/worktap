@@ -1,0 +1,261 @@
+<%- include('partials/header', { title: title, currentPath: '/register' }) %>
+
+<style>
+  .auth-page {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 0;
+  }
+
+  .auth-card {
+    background: white;
+    border-radius: 32px;
+    padding: 48px;
+    max-width: 520px;
+    width: 100%;
+    margin: 0 auto;
+    border: 1px solid #eef2f6;
+    box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.1);
+  }
+
+  .auth-card h1 {
+    font-size: 32px;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .auth-subtitle {
+    text-align: center;
+    color: #5a6a7e;
+    margin-bottom: 32px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #222;
+  }
+
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 40px;
+    border: 1.5px solid #e2e8f0;
+    font-size: 16px;
+    transition: all 0.2s;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #1DBF73;
+    box-shadow: 0 0 0 3px rgba(29, 191, 115, 0.1);
+  }
+
+  .auth-btn {
+    width: 100%;
+    background: #1DBF73;
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 60px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+
+  .auth-btn:hover {
+    background: #179e5f;
+    transform: translateY(-2px);
+  }
+
+  .auth-links {
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #eef2f6;
+  }
+
+  .auth-links a {
+    color: #1DBF73;
+    text-decoration: none;
+  }
+
+  .auth-links a:hover {
+    text-decoration: underline;
+  }
+
+  .error-message {
+    background: #fee2e2;
+    color: #dc2626;
+    padding: 12px 20px;
+    border-radius: 40px;
+    margin-bottom: 24px;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .role-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .role-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 40px;
+    border: 2px solid #e2e8f0;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 600;
+  }
+
+  .role-btn.active {
+    border-color: #1DBF73;
+    background: #1DBF73;
+    color: white;
+  }
+</style>
+
+<div class="container auth-page">
+  <div class="auth-card">
+    <h1>📝 Регистрация</h1>
+    <p class="auth-subtitle">Создайте аккаунт на Ворк.Тап</p>
+
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+    <form id="registerForm">
+      <div class="form-group">
+        <label>ФИО *</label>
+        <input type="text" id="fullName" required placeholder="Иванов Иван Иванович">
+      </div>
+
+      <div class="form-group">
+        <label>Email *</label>
+        <input type="email" id="email" required placeholder="example@mail.ru">
+      </div>
+
+      <div class="form-group">
+        <label>Телефон</label>
+        <input type="tel" id="phone" placeholder="+7 700 123 4567">
+      </div>
+
+      <div class="form-group">
+        <label>Пароль *</label>
+        <input type="password" id="password" required placeholder="минимум 6 символов">
+      </div>
+
+      <div class="form-group">
+        <label>Подтверждение пароля *</label>
+        <input type="password" id="confirmPassword" required placeholder="повторите пароль">
+      </div>
+
+      <div class="form-group">
+        <label>Кто вы? *</label>
+        <div class="role-buttons">
+          <button type="button" class="role-btn active" data-role="client">📋 Заказчик</button>
+          <button type="button" class="role-btn" data-role="freelancer">💼 Исполнитель</button>
+        </div>
+        <input type="hidden" id="role" value="client">
+      </div>
+
+      <button type="submit" class="auth-btn">Зарегистрироваться</button>
+    </form>
+
+    <div class="auth-links">
+      <a href="/login">Уже есть аккаунт? Войти</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Переключение ролей
+  const roleBtns = document.querySelectorAll('.role-btn');
+  const roleInput = document.getElementById('role');
+
+  roleBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      roleBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      roleInput.value = btn.dataset.role;
+    });
+  });
+
+  // Регистрация
+  const registerForm = document.getElementById('registerForm');
+  const errorDiv = document.getElementById('errorMessage');
+
+  registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (password !== confirmPassword) {
+      errorDiv.textContent = 'Пароли не совпадают';
+      errorDiv.style.display = 'block';
+      return;
+    }
+
+    if (password.length < 6) {
+      errorDiv.textContent = 'Пароль должен содержать минимум 6 символов';
+      errorDiv.style.display = 'block';
+      return;
+    }
+
+    const formData = {
+      full_name: document.getElementById('fullName').value,
+      email: document.getElementById('email').value,
+      phone: document.getElementById('phone').value,
+      password: password,
+      role: roleInput.value
+    };
+
+    errorDiv.style.display = 'none';
+
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Автоматически входим после регистрации
+        const loginResponse = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email, password: formData.password })
+        });
+
+        if (loginResponse.ok) {
+          window.location.href = formData.role === 'freelancer' ? '/market' : '/create-order';
+        } else {
+          window.location.href = '/login';
+        }
+      } else {
+        errorDiv.textContent = data.error || 'Ошибка регистрации';
+        errorDiv.style.display = 'block';
+      }
+    } catch (err) {
+      errorDiv.textContent = 'Ошибка соединения с сервером';
+      errorDiv.style.display = 'block';
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>

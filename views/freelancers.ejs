@@ -1,0 +1,113 @@
+<%- include('partials/header', { title: 'Фрилансеры — Ворк.Тап', currentPath: '/freelancers' }) %>
+
+<main>
+  <div class="container" style="padding: 40px 0 60px;">
+    <div class="section-header" style="margin-bottom: 32px;">
+      <div>
+        <h1>👨‍💻 Фрилансеры</h1>
+        <p style="color: #5a6a7e; margin-top: 8px;">Лучшие специалисты готовы взяться за ваш проект</p>
+      </div>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="filters-bar" style="background: white; border-radius: 28px; padding: 24px 28px; margin-bottom: 32px; border: 1px solid #eef2f6;">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>Поиск по имени</label>
+          <input type="text" id="searchInput" class="filter-input" placeholder="Имя фрилансера..." style="min-width: 250px;">
+        </div>
+        <div class="filter-group">
+          <label>Сортировка</label>
+          <select id="sortSelect" class="filter-select">
+            <option value="rating">По рейтингу ↓</option>
+            <option value="projects">По количеству проектов</option>
+            <option value="name">По имени</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Сетка фрилансеров -->
+    <div class="cards-grid" id="freelancersGrid">
+      <% if (freelancers && freelancers.length) { %>
+        <% freelancers.forEach(freelancer => { %>
+          <div class="freelancer-card" data-name="<%= freelancer.full_name.toLowerCase() %>" data-rating="<%= freelancer.rating || 0 %>" data-projects="<%= freelancer.completed_projects || 0 %>">
+            <div class="freelancer-top">
+              <div class="freelancer-avatar" style="background-image: url('<%= freelancer.avatar_url || 'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"45\" r=\"22\" fill=\"%23FBA457\"/><text x=\"50\" y=\"55\" text-anchor=\"middle\" fill=\"white\" font-size=\"28\">👤</text></svg>' %>');"></div>
+              <div class="freelancer-info">
+                <div class="freelancer-name"><%= freelancer.full_name %></div>
+                <div class="freelancer-role"><%= freelancer.specialization || 'Фрилансер' %></div>
+                <div class="projects-count">✅ Выполнено проектов: <%= freelancer.completed_projects || 0 %></div>
+                <div class="rating-stars">
+                  <% const rating = Math.round(freelancer.rating || 0); %>
+                  <% for (let i = 1; i <= 5; i++) { %>
+                    <span class="star"><%= i <= rating ? '★' : '☆' %></span>
+                  <% } %>
+                  <span style="margin-left: 8px;"><%= freelancer.rating ? freelancer.rating.toFixed(1) : 'Нет оценок' %></span>
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 16px;">
+              <a href="/profile/<%= freelancer.id %>" class="btn-outline" style="flex: 1; text-align: center;">Смотреть профиль</a>
+              <button class="btn-green" onclick="contactFreelancer(<%= freelancer.id %>)" style="flex: 1; padding: 8px;">💬 Написать</button>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="empty-message" style="grid-column: 1/-1; text-align: center; padding: 60px; background: white; border-radius: 28px;">
+          😕 Фрилансеров не найдено
+        </div>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  function contactFreelancer(id) {
+    if (!<%= isAuthenticated %>) {
+      if (confirm('Необходимо войти в аккаунт. Перейти на страницу входа?')) {
+        window.location.href = '/login';
+      }
+      return;
+    }
+    window.location.href = `/messages?user=${id}`;
+  }
+
+  // Поиск и сортировка
+  const searchInput = document.getElementById('searchInput');
+  const sortSelect = document.getElementById('sortSelect');
+  const freelancersGrid = document.getElementById('freelancersGrid');
+  const freelancers = Array.from(freelancersGrid.querySelectorAll('.freelancer-card'));
+
+  function filterAndSort() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const sortBy = sortSelect.value;
+
+    let filtered = freelancers.filter(card => {
+      const name = card.dataset.name;
+      return searchTerm === '' || name.includes(searchTerm);
+    });
+
+    filtered.sort((a, b) => {
+      if (sortBy === 'rating') {
+        return parseFloat(b.dataset.rating) - parseFloat(a.dataset.rating);
+      } else if (sortBy === 'projects') {
+        return parseInt(b.dataset.projects) - parseInt(a.dataset.projects);
+      } else {
+        return a.dataset.name.localeCompare(b.dataset.name);
+      }
+    });
+
+    freelancersGrid.innerHTML = '';
+    if (filtered.length === 0) {
+      freelancersGrid.innerHTML = '<div class="empty-message" style="grid-column: 1/-1; text-align: center; padding: 60px; background: white; border-radius: 28px;">😕 Фрилансеров не найдено</div>';
+    } else {
+      filtered.forEach(card => freelancersGrid.appendChild(card));
+    }
+  }
+
+  searchInput.addEventListener('input', filterAndSort);
+  sortSelect.addEventListener('change', filterAndSort);
+</script>
+
+<%- include('partials/footer') %>

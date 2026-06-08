@@ -1,0 +1,350 @@
+<%- include('partials/header', { title: title, currentPath: '/admin' }) %>
+
+<style>
+  .admin-page {
+    padding: 40px 0 70px;
+  }
+
+  .admin-header {
+    margin-bottom: 28px;
+  }
+
+  .admin-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .admin-stat {
+    background: white;
+    border: 1px solid #eef2f6;
+    border-radius: 20px;
+    padding: 18px;
+  }
+
+  .admin-stat strong {
+    display: block;
+    font-size: 26px;
+    margin-top: 8px;
+  }
+
+  .admin-tabs {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  .admin-tab {
+    border: 1px solid #e2e8f0;
+    background: white;
+    border-radius: 40px;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .admin-tab.active {
+    background: #1DBF73;
+    color: white;
+    border-color: #1DBF73;
+  }
+
+  .admin-panel {
+    display: none;
+    background: white;
+    border: 1px solid #eef2f6;
+    border-radius: 24px;
+    overflow: hidden;
+  }
+
+  .admin-panel.active {
+    display: block;
+  }
+
+  .admin-table-wrap {
+    overflow: auto;
+    max-height: 640px;
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 980px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #eef2f6;
+    text-align: left;
+    vertical-align: top;
+    font-size: 14px;
+  }
+
+  .admin-table th {
+    background: #F7F6FF;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  .admin-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .admin-actions select,
+  .admin-actions input {
+    border: 1px solid #e2e8f0;
+    border-radius: 40px;
+    padding: 8px 10px;
+    max-width: 150px;
+  }
+
+  .mini-btn {
+    border: none;
+    border-radius: 40px;
+    padding: 8px 12px;
+    cursor: pointer;
+    background: #F2F0FE;
+    font-weight: 700;
+  }
+
+  .mini-btn.green {
+    background: #1DBF73;
+    color: white;
+  }
+
+  .mini-btn.red {
+    background: #DA4A54;
+    color: white;
+  }
+
+  .status-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 40px;
+    background: #F2F0FE;
+    font-weight: 700;
+    font-size: 12px;
+  }
+</style>
+
+<main>
+  <div class="container admin-page">
+    <div class="admin-header">
+      <h1>Админ панель</h1>
+      <p style="color:#5a6a7e;">Управление пользователями, заказами, ворками, проектами, кошельками и сообщениями.</p>
+    </div>
+
+    <div class="admin-stats">
+      <div class="admin-stat">Пользователи<strong><%= stats.users_count || 0 %></strong></div>
+      <div class="admin-stat">Заблокированы<strong><%= stats.blocked_users_count || 0 %></strong></div>
+      <div class="admin-stat">Ворки<strong><%= stats.works_count || 0 %></strong></div>
+      <div class="admin-stat">Проекты<strong><%= stats.projects_count || 0 %></strong></div>
+      <div class="admin-stat">Заказы<strong><%= stats.orders_count || 0 %></strong></div>
+      <div class="admin-stat">Завершено<strong><%= stats.completed_orders_count || 0 %></strong></div>
+      <div class="admin-stat">Оборот<strong><%= new Intl.NumberFormat('ru-RU').format(stats.order_volume || 0) %> ₽</strong></div>
+      <div class="admin-stat">Сообщения<strong><%= stats.messages_count || 0 %></strong></div>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="showAdminPanel('users')">Пользователи</button>
+      <button class="admin-tab" onclick="showAdminPanel('orders')">Заказы</button>
+      <button class="admin-tab" onclick="showAdminPanel('works')">Ворки</button>
+      <button class="admin-tab" onclick="showAdminPanel('projects')">Проекты</button>
+      <button class="admin-tab" onclick="showAdminPanel('messages')">Сообщения</button>
+    </div>
+
+    <section class="admin-panel active" id="panel-users">
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Пользователь</th>
+              <th>Контакты</th>
+              <th>Роль</th>
+              <th>Баланс</th>
+              <th>Статус</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% users.forEach(item => { %>
+              <tr>
+                <td><%= item.id %></td>
+                <td><strong><%= item.full_name %></strong><br><span style="color:#5a6a7e;"><%= new Date(item.created_at).toLocaleDateString('ru-RU') %></span></td>
+                <td><%= item.email %><br><span style="color:#5a6a7e;"><%= item.phone || 'телефон не указан' %></span></td>
+                <td><span class="status-pill"><%= item.role %></span></td>
+                <td><%= new Intl.NumberFormat('ru-RU').format(item.balance || 0) %> ₽<br><span style="color:#5a6a7e;">заморожено: <%= new Intl.NumberFormat('ru-RU').format(item.frozen_balance || 0) %> ₽</span></td>
+                <td><%= item.is_active ? 'Активен' : 'Заблокирован' %></td>
+                <td>
+                  <div class="admin-actions">
+                    <select id="role-<%= item.id %>">
+                      <% ['client','freelancer','both','admin'].forEach(role => { %>
+                        <option value="<%= role %>" <%= item.role === role ? 'selected' : '' %>><%= role %></option>
+                      <% }) %>
+                    </select>
+                    <button class="mini-btn green" onclick="updateUserRole(<%= item.id %>)">Роль</button>
+                    <input id="balance-<%= item.id %>" type="number" placeholder="+/- сумма">
+                    <button class="mini-btn" onclick="adjustBalance(<%= item.id %>)">Баланс</button>
+                    <button class="mini-btn <%= item.is_active ? 'red' : 'green' %>" onclick="toggleUser(<%= item.id %>)"><%= item.is_active ? 'Блок' : 'Разблок' %></button>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-panel" id="panel-orders">
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>ID</th><th>Ворк</th><th>Стороны</th><th>Сумма</th><th>Статус</th><th>Действия</th></tr></thead>
+          <tbody>
+            <% orders.forEach(item => { %>
+              <tr>
+                <td><%= item.id %></td>
+                <td><%= item.work_title %><br><span style="color:#5a6a7e;"><%= new Date(item.created_at).toLocaleString('ru-RU') %></span></td>
+                <td>Клиент: <%= item.buyer_name %><br>Исполнитель: <%= item.seller_name %></td>
+                <td><%= new Intl.NumberFormat('ru-RU').format(item.amount || 0) %> ₽</td>
+                <td><span class="status-pill"><%= item.status %></span></td>
+                <td class="admin-actions">
+                  <select id="order-status-<%= item.id %>">
+                    <% ['paid','in_progress','delivered','completed','cancelled'].forEach(status => { %>
+                      <option value="<%= status %>" <%= item.status === status ? 'selected' : '' %>><%= status %></option>
+                    <% }) %>
+                  </select>
+                  <button class="mini-btn green" onclick="updateOrderStatus(<%= item.id %>)">Сохранить</button>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-panel" id="panel-works">
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>ID</th><th>Ворк</th><th>Исполнитель</th><th>Категория</th><th>Рейтинг</th><th>Статус</th><th>Действия</th></tr></thead>
+          <tbody>
+            <% works.forEach(item => { %>
+              <tr>
+                <td><%= item.id %></td>
+                <td><a href="/work/<%= item.id %>"><%= item.title %></a></td>
+                <td><%= item.seller_name %></td>
+                <td><%= item.category_name %></td>
+                <td><%= item.rating || 0 %> / <%= item.reviews_count || 0 %></td>
+                <td><%= item.is_active ? 'Активен' : 'Скрыт' %></td>
+                <td><button class="mini-btn <%= item.is_active ? 'red' : 'green' %>" onclick="toggleWork(<%= item.id %>)"><%= item.is_active ? 'Скрыть' : 'Вернуть' %></button></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-panel" id="panel-projects">
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>ID</th><th>Проект</th><th>Клиент</th><th>Категория</th><th>Бюджет</th><th>Статус</th><th>Действия</th></tr></thead>
+          <tbody>
+            <% projects.forEach(item => { %>
+              <tr>
+                <td><%= item.id %></td>
+                <td><a href="/projects/<%= item.id %>"><%= item.title %></a></td>
+                <td><%= item.client_name %></td>
+                <td><%= item.category_name %></td>
+                <td><%= new Intl.NumberFormat('ru-RU').format(item.budget || 0) %> ₽</td>
+                <td><span class="status-pill"><%= item.status %></span></td>
+                <td class="admin-actions">
+                  <select id="project-status-<%= item.id %>">
+                    <% ['open','in_progress','completed','cancelled'].forEach(status => { %>
+                      <option value="<%= status %>" <%= item.status === status ? 'selected' : '' %>><%= status %></option>
+                    <% }) %>
+                  </select>
+                  <button class="mini-btn green" onclick="updateProjectStatus(<%= item.id %>)">Сохранить</button>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-panel" id="panel-messages">
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>ID</th><th>От кого</th><th>Кому</th><th>Сообщение</th><th>Фото</th><th>Дата</th></tr></thead>
+          <tbody>
+            <% messages.forEach(item => { %>
+              <tr>
+                <td><%= item.id %></td>
+                <td><%= item.sender_name %></td>
+                <td><%= item.receiver_name %></td>
+                <td><%= item.message || '[только фото]' %></td>
+                <td><%= item.attachments_count || 0 %></td>
+                <td><%= new Date(item.created_at).toLocaleString('ru-RU') %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+  function showAdminPanel(name) {
+    document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.admin-panel').forEach(panel => panel.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.getElementById(`panel-${name}`).classList.add('active');
+  }
+
+  async function postJson(url, body = {}) {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Не удалось сохранить');
+    window.location.reload();
+  }
+
+  function updateUserRole(id) {
+    postJson(`/api/admin/users/${id}/role`, {role: document.getElementById(`role-${id}`).value}).catch(err => alert(err.message));
+  }
+
+  function toggleUser(id) {
+    postJson(`/api/admin/users/${id}/toggle-active`).catch(err => alert(err.message));
+  }
+
+  function adjustBalance(id) {
+    const amount = Number(document.getElementById(`balance-${id}`).value);
+    if (!Number.isFinite(amount) || amount === 0) return alert('Введите сумму');
+    postJson(`/api/admin/users/${id}/balance`, {amount}).catch(err => alert(err.message));
+  }
+
+  function updateOrderStatus(id) {
+    postJson(`/api/admin/orders/${id}/status`, {status: document.getElementById(`order-status-${id}`).value}).catch(err => alert(err.message));
+  }
+
+  function toggleWork(id) {
+    postJson(`/api/admin/works/${id}/toggle-active`).catch(err => alert(err.message));
+  }
+
+  function updateProjectStatus(id) {
+    postJson(`/api/admin/projects/${id}/status`, {status: document.getElementById(`project-status-${id}`).value}).catch(err => alert(err.message));
+  }
+</script>
+
+<%- include('partials/footer') %>

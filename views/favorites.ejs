@@ -1,0 +1,118 @@
+<%- include('partials/header', { title: 'Избранное — Ворк.Тап', currentPath: '/favorites' }) %>
+
+<main>
+  <div class="container" style="padding: 40px 0 60px;">
+    <div class="section-header" style="margin-bottom: 32px;">
+      <div>
+        <h1>❤️ Избранное</h1>
+        <p style="color: #5a6a7e; margin-top: 8px;">Сохранённые фрилансеры и ворки</p>
+      </div>
+    </div>
+
+    <!-- Табы -->
+    <div class="tabs" style="margin-bottom: 32px;">
+      <button class="tab-btn active" data-tab="freelancers">👨‍💻 Фрилансеры (<%= freelancers.length %>)</button>
+      <button class="tab-btn" data-tab="works">📦 Ворки (<%= works.length %>)</button>
+    </div>
+
+    <!-- Фрилансеры -->
+    <div id="freelancersTab" class="tab-content active">
+      <div class="cards-grid">
+        <% if (freelancers && freelancers.length) { %>
+          <% freelancers.forEach(freelancer => { %>
+            <div class="freelancer-card">
+              <div class="freelancer-top">
+                <div class="freelancer-avatar" style="background-image: url('<%= freelancer.avatar_url || 'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"45\" r=\"22\" fill=\"%23FBA457\"/><text x=\"50\" y=\"55\" text-anchor=\"middle\" fill=\"white\" font-size=\"28\">👤</text></svg>' %>');"></div>
+                <div class="freelancer-info">
+                  <div class="freelancer-name"><%= freelancer.full_name %></div>
+                  <div class="freelancer-role"><%= freelancer.specialization || 'Фрилансер' %></div>
+                  <div class="projects-count">✅ Выполнено проектов: <%= freelancer.completed_projects || 0 %></div>
+                  <div class="rating-stars">
+                    <% const rating = Math.round(freelancer.rating || 0); %>
+                    <% for (let i = 1; i <= 5; i++) { %>
+                      <span class="star"><%= i <= rating ? '★' : '☆' %></span>
+                    <% } %>
+                    <span style="margin-left: 8px;"><%= freelancer.rating ? freelancer.rating.toFixed(1) : 'Нет оценок' %></span>
+                  </div>
+                </div>
+              </div>
+              <div class="action-row" style="margin-top: 16px;">
+                <a href="/profile/<%= freelancer.id %>" class="btn-green action-btn" style="flex: 1;">Открыть профиль</a>
+                <a href="/messages?user=<%= freelancer.id %>" class="btn-outline action-btn" style="flex: 1;">Написать</a>
+                <button class="btn-outline action-btn action-btn-full action-btn-danger" onclick="removeFromFavorites('freelancer', <%= freelancer.id %>)">Убрать из избранного</button>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="empty-message" style="grid-column: 1/-1; text-align: center; padding: 60px; background: white; border-radius: 28px;">
+            😕 Нет сохранённых фрилансеров
+            <br><br>
+            <a href="/freelancers" class="btn-green">👨‍💻 Найти фрилансеров</a>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Ворки -->
+    <div id="worksTab" class="tab-content">
+      <div class="cards-grid">
+        <% if (works && works.length) { %>
+          <% works.forEach(work => { %>
+            <div class="work-card">
+              <div class="card-avatar" style="background-image: url('<%= work.thumbnail || '/images/avatar-placeholder.jpg' %>');"></div>
+              <div class="work-title"><%= work.title %></div>
+              <div class="work-desc"><%= work.description ? work.description.substring(0, 100) : '' %><%= work.description && work.description.length > 100 ? '...' : '' %></div>
+              <div class="work-price"><%= new Intl.NumberFormat('ru-RU').format(work.price || 0) %> ₽</div>
+              <div class="action-row" style="margin-top: 16px;">
+                <a href="/work/<%= work.id %>" class="btn-green action-btn" style="flex: 1;">Открыть ворк</a>
+                <button class="btn-outline action-btn action-btn-danger" onclick="removeFromFavorites('work', <%= work.id %>)" style="flex: 1;">Убрать</button>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="empty-message" style="grid-column: 1/-1; text-align: center; padding: 60px; background: white; border-radius: 28px;">
+            😕 Нет сохранённых ворков
+            <br><br>
+            <a href="/works" class="btn-green">📦 Искать ворки</a>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Переключение табов
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabId = btn.dataset.tab;
+      tabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      tabContents.forEach(content => content.classList.remove('active'));
+      document.getElementById(`${tabId}Tab`).classList.add('active');
+    });
+  });
+
+  function removeFromFavorites(type, id) {
+    if (confirm('Удалить из избранного?')) {
+      fetch('/api/favorites/remove', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, id })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          window.location.reload();
+        } else {
+          alert('Ошибка удаления');
+        }
+      });
+    }
+  }
+</script>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,544 @@
+<%- include('partials/header', { title: 'Сообщения — Ворк.Тап', currentPath: '/messages' }) %>
+
+<style>
+  .messages-page {
+    padding: 40px 0 60px;
+    background: #F6FAFD;
+  }
+
+  .messages-container {
+    display: flex;
+    gap: 0;
+    background: white;
+    border-radius: 32px;
+    border: 1px solid #dfe8f2;
+    box-shadow: 0 18px 40px rgba(21, 33, 55, 0.08);
+    overflow: hidden;
+    height: calc(100vh - 230px);
+    min-height: 620px;
+  }
+
+  .conversations-list {
+    width: 340px;
+    border-right: 1px solid #dfe8f2;
+    background: #EEF7F3;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .conversations-header {
+    padding: 20px;
+    border-bottom: 1px solid #d6e4dc;
+    font-weight: 700;
+    background: #E5F4EC;
+    flex: 0 0 auto;
+  }
+
+  .conversations-scroll {
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .conversation-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid #eef2f6;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .conversation-item:hover {
+    background: #F2F0FE;
+  }
+
+  .conversation-item.active {
+    background: white;
+    border-left: 3px solid #1DBF73;
+  }
+
+  .conversation-name {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .conversation-last {
+    font-size: 12px;
+    color: #5a6a7e;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: #FBFDFF;
+  }
+
+  .chat-header {
+    padding: 20px;
+    border-bottom: 1px solid #dfe8f2;
+    font-weight: 600;
+    flex: 0 0 auto;
+    background: white;
+  }
+
+  .messages-list {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+    background: linear-gradient(180deg, #FBFDFF 0%, #F7FAFE 100%);
+  }
+
+  .message {
+    max-width: min(72%, 620px);
+    padding: 12px 16px;
+    border-radius: 20px;
+    word-break: break-word;
+  }
+
+  .message-outgoing {
+    background: #1DBF73;
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+
+  .message-incoming {
+    background: #F2F0FE;
+    color: #222;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
+
+  .message-text {
+    white-space: pre-wrap;
+  }
+
+  .message-attachments {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .message-attachments.single {
+    grid-template-columns: minmax(180px, 320px);
+  }
+
+  .message-attachments img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 14px;
+    cursor: zoom-in;
+    display: block;
+  }
+
+  .message-time {
+    font-size: 10px;
+    opacity: 0.7;
+    margin-top: 6px;
+  }
+
+  .chat-input-area {
+    padding: 16px 20px;
+    border-top: 1px solid #dfe8f2;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 0 0 auto;
+  }
+
+  .chat-input-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .chat-input {
+    flex: 1;
+    padding: 12px 18px;
+    border-radius: 40px;
+    border: 1.5px solid #e2e8f0;
+    font-family: inherit;
+    min-width: 0;
+  }
+
+  .attach-btn {
+    min-width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid #e2e8f0;
+    background: #F7F6FF;
+    cursor: pointer;
+    font-size: 18px;
+  }
+
+  .attachment-preview {
+    display: none;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .attachment-preview.active {
+    display: flex;
+  }
+
+  .preview-item {
+    position: relative;
+    flex: 0 0 76px;
+  }
+
+  .preview-item img {
+    width: 76px;
+    height: 76px;
+    object-fit: cover;
+    border-radius: 12px;
+    display: block;
+  }
+
+  .preview-remove {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: #DA4A54;
+    color: white;
+    cursor: pointer;
+    line-height: 22px;
+  }
+
+  .empty-chat {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5a6a7e;
+    text-align: center;
+  }
+
+  .image-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.84);
+    z-index: 3000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+  }
+
+  .image-lightbox.active {
+    display: flex;
+  }
+
+  .image-lightbox img {
+    max-width: 96vw;
+    max-height: 92vh;
+    object-fit: contain;
+    border-radius: 12px;
+  }
+
+  .image-lightbox button {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+  }
+
+  @media (max-width: 768px) {
+    .messages-container {
+      flex-direction: column;
+      height: calc(100vh - 180px);
+      min-height: 680px;
+    }
+
+    .conversations-list {
+      width: 100%;
+      max-height: 220px;
+      border-right: none;
+      border-bottom: 1px solid #eef2f6;
+    }
+
+    .message {
+      max-width: 88%;
+    }
+  }
+</style>
+
+<main>
+  <div class="container messages-page">
+    <div class="messages-container">
+      <div class="conversations-list" id="conversationsList">
+        <div class="conversations-header">Диалоги</div>
+        <div class="conversations-scroll" id="conversationsContainer">
+          <% if (conversations && conversations.length) { %>
+            <% conversations.forEach(conv => { %>
+              <div class="conversation-item" data-user-id="<%= conv.user_id %>" onclick='selectConversation(<%- JSON.stringify(conv.user_id) %>, <%- JSON.stringify(conv.full_name) %>)'>
+                <div class="conversation-name"><%= conv.full_name %></div>
+                <div class="conversation-last"><%= conv.last_message || 'Нет сообщений' %></div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div style="padding: 40px 20px; text-align: center; color: #5a6a7e;">
+              Нет диалогов
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="chat-area">
+        <div class="chat-header" id="chatHeader">Выберите диалог</div>
+        <div class="messages-list" id="messagesList">
+          <div class="empty-chat">Выберите диалог из списка, чтобы начать общение</div>
+        </div>
+        <div class="chat-input-area" id="chatInputArea" style="display: none;">
+          <div class="attachment-preview" id="attachmentPreview"></div>
+          <div class="chat-input-row">
+            <button type="button" class="attach-btn" onclick="document.getElementById('imageInput').click()" title="Прикрепить фото">📎</button>
+            <input type="file" id="imageInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+            <input type="text" class="chat-input" id="messageInput" placeholder="Введите сообщение...">
+            <button class="btn-green" onclick="sendMessage()" style="padding: 12px 28px;">Отправить</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="image-lightbox" id="imageLightbox" onclick="closeLightbox()">
+  <button type="button" onclick="closeLightbox()">×</button>
+  <img id="lightboxImage" src="" alt="">
+</div>
+
+<script>
+  let currentUserId = null;
+  let currentUserName = '';
+  let pendingFiles = [];
+  let lastMessagesSignature = '';
+  let isRefreshingChat = false;
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function selectConversation(userId, userName) {
+    currentUserId = Number(userId);
+    currentUserName = userName || 'Диалог';
+    document.getElementById('chatHeader').textContent = currentUserName;
+    document.getElementById('chatInputArea').style.display = 'flex';
+
+    document.querySelectorAll('.conversation-item').forEach(item => {
+      item.classList.toggle('active', Number(item.dataset.userId) === currentUserId);
+    });
+
+    loadMessages(true);
+  }
+
+  function messagesSignature(messages) {
+    return JSON.stringify(messages.map(msg => [
+      msg.id,
+      msg.message,
+      msg.created_at,
+      (msg.attachments || []).map(file => file.id).join(',')
+    ]));
+  }
+
+  function loadMessages(forceScroll = false) {
+    if (!currentUserId || isRefreshingChat) return;
+    isRefreshingChat = true;
+
+    fetch(`/api/messages/${currentUserId}`)
+      .then(res => res.json())
+      .then(messages => {
+        const messagesList = document.getElementById('messagesList');
+        const signature = Array.isArray(messages) ? messagesSignature(messages) : '';
+        if (!forceScroll && signature === lastMessagesSignature) return;
+        lastMessagesSignature = signature;
+
+        const wasNearBottom = messagesList.scrollHeight - messagesList.scrollTop - messagesList.clientHeight < 120;
+
+        if (!Array.isArray(messages) || messages.length === 0) {
+          messagesList.innerHTML = '<div class="empty-chat">Напишите первое сообщение</div>';
+          return;
+        }
+
+        messagesList.innerHTML = messages.map(renderMessage).join('');
+        if (forceScroll || wasNearBottom) {
+          messagesList.scrollTop = messagesList.scrollHeight;
+        }
+      })
+      .finally(() => {
+        isRefreshingChat = false;
+      });
+  }
+
+  function renderMessage(msg) {
+    const files = Array.isArray(msg.attachments) ? msg.attachments : [];
+    const attachments = files.length ? `
+      <div class="message-attachments ${files.length === 1 ? 'single' : ''}">
+        ${files.map(file => `
+          <img src="${escapeHtml(file.file_path)}" alt="${escapeHtml(file.file_name || 'Фото')}" onclick="openLightbox('${escapeHtml(file.file_path)}')">
+        `).join('')}
+      </div>
+    ` : '';
+
+    return `
+      <div class="message ${msg.is_outgoing ? 'message-outgoing' : 'message-incoming'}">
+        ${msg.message ? `<div class="message-text">${escapeHtml(msg.message)}</div>` : ''}
+        ${attachments}
+        <div class="message-time">${new Date(msg.created_at).toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}</div>
+      </div>
+    `;
+  }
+
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const message = input.value.trim();
+    if ((!message && pendingFiles.length === 0) || !currentUserId) return;
+
+    const attachments = await Promise.all(pendingFiles.map(async (file) => ({
+      name: file.name,
+      type: file.type,
+      dataUrl: await fileToDataUrl(file)
+    })));
+
+    fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to_user_id: currentUserId, message, attachments })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          input.value = '';
+          pendingFiles = [];
+          renderPreview();
+          loadMessages(true);
+          refreshConversations();
+        } else {
+          alert(data.error || 'Не удалось отправить сообщение');
+        }
+      });
+  }
+
+  function renderPreview() {
+    const preview = document.getElementById('attachmentPreview');
+    preview.innerHTML = '';
+    preview.classList.toggle('active', pendingFiles.length > 0);
+
+    pendingFiles.forEach((file, index) => {
+      const url = URL.createObjectURL(file);
+      const item = document.createElement('div');
+      item.className = 'preview-item';
+      item.innerHTML = `<img src="${url}" alt=""><button type="button" class="preview-remove" onclick="removePendingFile(${index})">×</button>`;
+      preview.appendChild(item);
+    });
+  }
+
+  function removePendingFile(index) {
+    pendingFiles.splice(index, 1);
+    renderPreview();
+  }
+
+  document.getElementById('imageInput').addEventListener('change', (event) => {
+    const files = Array.from(event.target.files || []);
+    const validFiles = files.filter(file => file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024);
+    pendingFiles = pendingFiles.concat(validFiles).slice(0, 5);
+    event.target.value = '';
+    renderPreview();
+  });
+
+  document.getElementById('messageInput')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  function openLightbox(src) {
+    document.getElementById('lightboxImage').src = src;
+    document.getElementById('imageLightbox').classList.add('active');
+  }
+
+  function closeLightbox() {
+    document.getElementById('imageLightbox').classList.remove('active');
+    document.getElementById('lightboxImage').src = '';
+  }
+
+  function renderConversationList(conversations) {
+    const container = document.getElementById('conversationsContainer');
+    if (!Array.isArray(conversations) || conversations.length === 0) {
+      container.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: #5a6a7e;">Нет диалогов</div>';
+      return;
+    }
+
+    container.innerHTML = conversations.map(conv => `
+      <div class="conversation-item ${Number(conv.user_id) === currentUserId ? 'active' : ''}" data-user-id="${conv.user_id}" onclick='selectConversation(${Number(conv.user_id)}, ${JSON.stringify(conv.full_name || 'Диалог')})'>
+        <div class="conversation-name">${escapeHtml(conv.full_name || 'Диалог')}</div>
+        <div class="conversation-last">${escapeHtml(conv.last_message || 'Нет сообщений')}</div>
+      </div>
+    `).join('');
+  }
+
+  function refreshConversations() {
+    const queryUser = currentUserId || new URLSearchParams(window.location.search).get('user');
+    const url = queryUser ? `/api/conversations?user=${queryUser}` : '/api/conversations';
+    fetch(url)
+      .then(res => res.json())
+      .then(conversations => {
+        renderConversationList(conversations);
+        if (!currentUserId && conversations && conversations.length) {
+          const initialUserId = new URLSearchParams(window.location.search).get('user');
+          const target = conversations.find(conv => Number(conv.user_id) === Number(initialUserId));
+          if (target) selectConversation(target.user_id, target.full_name);
+        }
+      });
+  }
+
+  setInterval(() => {
+    refreshConversations();
+    if (currentUserId) loadMessages(false);
+  }, 5000);
+
+  const initialUserId = new URLSearchParams(window.location.search).get('user');
+  if (initialUserId) {
+    const item = document.querySelector(`.conversation-item[data-user-id="${initialUserId}"]`);
+    if (item) {
+      item.click();
+    } else {
+      selectConversation(Number(initialUserId), 'Диалог');
+    }
+  }
+</script>
+
+<%- include('partials/footer') %>

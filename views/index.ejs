@@ -1,0 +1,187 @@
+<%- include('partials/header', { title: title, currentPath: '/' }) %>
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-left">
+      <h1>Покупайте фриланс-услуги <br>в <span>два клика</span></h1>
+      <p class="hero-desc">Ворк — единица работы продавца, которую можно купить как товар в магазине</p>
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Что нужно сделать?">
+        <button onclick="search()">Найти</button>
+      </div>
+      <div class="rubrics-title">Выберите рубрику, чтобы начать</div>
+      <div class="rubric-buttons">
+        <% if (categories && categories.length) { %>
+          <% categories.forEach(cat => { %>
+            <a href="/market?category=<%= cat.id %>" class="rubric-btn"><%= cat.name %></a>
+          <% }) %>
+        <% } %>
+        <a href="/market" class="rubric-btn">Все категории</a>
+      </div>
+    </div>
+    <div class="hero-right">
+  <img src="/images/main-img.png" alt="Ворк.Тап" class="hero-image">
+</div>
+  </div>
+</section>
+
+<main>
+  <div class="container">
+    <!-- Актуальные ворки -->
+    <section class="section">
+      <div class="section-header">
+        <h2>Актуальные ворки</h2>
+        <a href="/works" class="view-all">Смотреть все ворки →</a>
+      </div>
+      <div class="cards-grid">
+        <% if (works && works.length) { %>
+          <% works.forEach(work => { %>
+            <div class="work-card">
+              <div class="card-avatar" style="background-image: url('<%= work.thumbnail || '/images/avatar-placeholder.jpg' %>');"></div>
+              <div class="work-title"><%= work.title %></div>
+              <div class="work-desc"><%= work.description ? work.description.substring(0, 100) : 'Описание отсутствует' %><%= work.description && work.description.length > 100 ? '...' : '' %></div>
+              <div class="work-price">
+                <% if (work.price) { %>
+                  <%= new Intl.NumberFormat('ru-RU').format(work.price) %> ₽
+                <% } else { %>
+                  Цена по запросу
+                <% } %>
+              </div>
+              <div class="action-row">
+                <a href="/work/<%= work.id %>" class="btn-outline action-btn" style="flex:1;">Подробнее</a>
+                <% if (isAuthenticated) { %>
+                  <% const isFav = favoriteWorkIds && favoriteWorkIds.includes(Number(work.id)); %>
+                  <button class="btn-outline action-btn favorite-work-btn <%= isFav ? 'is-favorite' : '' %>" data-work-id="<%= work.id %>" onclick="addWorkToFavorites(<%= work.id %>, this)" style="flex:1;"><%= isFav ? 'В избранном' : 'В избранное' %></button>
+                <% } %>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="empty-message">😕 Пока нет активных ворков</div>
+        <% } %>
+      </div>
+    </section>
+
+    <!-- Топ фрилансеров -->
+    <section class="section" style="padding-top: 0;">
+      <div class="section-header">
+        <h2>Топ фрилансеров</h2>
+        <a href="/freelancers" class="view-all">Посмотреть всех →</a>
+      </div>
+      <div class="cards-grid">
+        <% if (topFreelancers && topFreelancers.length) { %>
+          <% topFreelancers.forEach(freelancer => { %>
+            <div class="freelancer-card">
+              <div class="freelancer-top">
+                <div class="freelancer-avatar" style="background-image: url('<%= freelancer.avatar_url || '/images/avatar-placeholder.jpg' %>');"></div>
+                <div class="freelancer-info">
+                  <div class="freelancer-name"><%= freelancer.full_name %></div>
+                  <div class="freelancer-role"><%= freelancer.specialization || 'Фрилансер' %></div>
+                  <div class="projects-count">✅ Выполнено проектов: <%= freelancer.completed_projects || 0 %></div>
+                  <div class="rating-stars">
+                    <% const rating = Math.round(freelancer.rating || 0); %>
+                    <% for (let i = 1; i <= 5; i++) { %>
+                      <span class="star"><%= i <= rating ? '★' : '☆' %></span>
+                    <% } %>
+                    <span style="margin-left: 8px;"><%= freelancer.rating ? freelancer.rating.toFixed(1) : '0' %></span>
+                  </div>
+                </div>
+              </div>
+              <a href="/profile/<%= freelancer.id %>" class="btn-outline">Смотреть профиль</a>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="empty-message">😕 Нет данных о фрилансерах</div>
+        <% } %>
+      </div>
+    </section>
+
+    <!-- Как это работает -->
+    <section class="section" style="padding-bottom: 40px;">
+      <div class="section-header">
+        <h2>Как решать задачи на Ворк.Тап?</h2>
+        <span style="color: #5a6a7e;">Идеально подходит для бизнеса и частных лиц.</span>
+      </div>
+      <div class="how-grid">
+        <div class="how-item">
+          <div class="how-icon">📦</div>
+          <h3>Выберите услугу</h3>
+          <p>В маркетплейсе Ворк.Тап представлен широкий выбор услуг от квалифицированных специалистов.</p>
+        </div>
+        <div class="how-item">
+          <div class="how-icon">💳</div>
+          <h3>Оплатите</h3>
+          <p>Деньги будут перечислены продавцу после того, как он выполнит работу, и вы её одобрите.</p>
+        </div>
+        <div class="how-item">
+          <div class="how-icon">🏆</div>
+          <h3>Получите результат</h3>
+          <p>Наш маркетплейс гарантирует вам возврат средств в полном объёме в случае невыполнения заказа.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Блок для бизнеса -->
+  <div class="help-business-full">
+    <div class="help-business-content">
+      <div class="help-business-inner">
+        <div class="help-left">
+          <h2>Как Ворк.Тап помогает бизнесу?</h2>
+          <ul class="help-list">
+            <li>Оплачивайте с р/с или карты компании</li>
+            <li>Экономите до 67% бюджета на штатного специалиста</li>
+            <li>Экономите до 75% времени на поиск исполнителей</li>
+          </ul>
+          <p style="font-weight: 500; font-size: 18px;">Ворк.Тап — быстро, просто и безопасно!</p>
+          <a href="/register" class="start-btn">Начать!</a>
+        </div>
+        <div class="help-right" style="background-image: url('/images/works/business-help.jpg'); background-size: cover; background-position: center;"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  function search() {
+    const query = document.getElementById('searchInput').value;
+    if (query.trim()) {
+      window.location.href = `/market?search=${encodeURIComponent(query)}`;
+    }
+  }
+
+  // Добавляем обработчик Enter
+  document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      search();
+    }
+  });
+
+  function setFavoriteButton(button) {
+    if (!button) return;
+    button.classList.add('is-favorite');
+    button.textContent = 'В избранном';
+    button.style.background = '#1DBF73';
+    button.style.color = 'white';
+    button.style.borderColor = '#1DBF73';
+    button.disabled = true;
+  }
+
+  function addWorkToFavorites(workId, button) {
+    fetch('/api/favorites', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({work_id: workId})
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setFavoriteButton(button);
+        } else {
+          alert(data.error || 'Не удалось добавить в избранное');
+        }
+      });
+  }
+</script>
+
+<%- include('partials/footer') %>

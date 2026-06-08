@@ -1,0 +1,186 @@
+<%- include('partials/header', { title: title, currentPath: '/login' }) %>
+
+<style>
+  .auth-page {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 0;
+  }
+
+  .auth-card {
+    background: white;
+    border-radius: 32px;
+    padding: 48px;
+    max-width: 480px;
+    width: 100%;
+    margin: 0 auto;
+    border: 1px solid #eef2f6;
+    box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.1);
+  }
+
+  .auth-card h1 {
+    font-size: 32px;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .auth-subtitle {
+    text-align: center;
+    color: #5a6a7e;
+    margin-bottom: 32px;
+  }
+
+  .form-group {
+    margin-bottom: 24px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #222;
+  }
+
+  .form-group input {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 40px;
+    border: 1.5px solid #e2e8f0;
+    font-size: 16px;
+    transition: all 0.2s;
+  }
+
+  .form-group input:focus {
+    outline: none;
+    border-color: #1DBF73;
+    box-shadow: 0 0 0 3px rgba(29, 191, 115, 0.1);
+  }
+
+  .auth-btn {
+    width: 100%;
+    background: #1DBF73;
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 60px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+
+  .auth-btn:hover {
+    background: #179e5f;
+    transform: translateY(-2px);
+  }
+
+  .auth-links {
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #eef2f6;
+  }
+
+  .auth-links a {
+    color: #1DBF73;
+    text-decoration: none;
+  }
+
+  .auth-links a:hover {
+    text-decoration: underline;
+  }
+
+  .error-message {
+    background: #fee2e2;
+    color: #dc2626;
+    padding: 12px 20px;
+    border-radius: 40px;
+    margin-bottom: 24px;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .success-message {
+    background: #d1fae5;
+    color: #059669;
+    padding: 12px 20px;
+    border-radius: 40px;
+    margin-bottom: 24px;
+    text-align: center;
+    font-size: 14px;
+  }
+</style>
+
+<div class="container auth-page">
+  <div class="auth-card">
+    <h1>🔐 Вход в аккаунт</h1>
+    <p class="auth-subtitle">Добро пожаловать обратно!</p>
+
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+    <div id="successMessage" class="success-message" style="display: none;"></div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" required placeholder="example@mail.ru">
+      </div>
+
+      <div class="form-group">
+        <label>Пароль</label>
+        <input type="password" id="password" required placeholder="••••••••">
+      </div>
+
+      <button type="submit" class="auth-btn">Войти</button>
+    </form>
+
+    <div class="auth-links">
+      <a href="/register">Нет аккаунта? Зарегистрироваться</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  const loginForm = document.getElementById('loginForm');
+  const errorDiv = document.getElementById('errorMessage');
+  const successDiv = document.getElementById('successMessage');
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    errorDiv.style.display = 'none';
+    successDiv.style.display = 'none';
+
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        successDiv.textContent = 'Вход выполнен! Перенаправление...';
+        successDiv.style.display = 'block';
+
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+      } else {
+        errorDiv.textContent = data.error || 'Ошибка входа';
+        errorDiv.style.display = 'block';
+      }
+    } catch (err) {
+      errorDiv.textContent = 'Ошибка соединения с сервером';
+      errorDiv.style.display = 'block';
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>
