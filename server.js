@@ -6,21 +6,57 @@ const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const https = require('https');
+const os = require('os');
 const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const dataDir = process.env.WORKTAP_DATA_DIR
-    ? path.resolve(process.env.WORKTAP_DATA_DIR)
-    : __dirname;
-fs.mkdirSync(dataDir, {recursive: true});
-const dbPath = process.env.WORKTAP_DB_PATH
-    ? path.resolve(process.env.WORKTAP_DB_PATH)
-    : path.join(dataDir, 'worktap.db');
-fs.mkdirSync(path.dirname(dbPath), {recursive: true});
-const chatUploadDir = process.env.WORKTAP_UPLOAD_DIR
-    ? path.resolve(process.env.WORKTAP_UPLOAD_DIR, 'chat')
-    : path.join(__dirname, 'public', 'uploads', 'chat');
+
+function ensureWritableDir(dir) {
+    const absoluteDir = path.resolve(dir);
+    fs.mkdirSync(absoluteDir, {recursive: true});
+    const probe = path.join(absoluteDir, `.write-test-${process.pid}-${Date.now()}`);
+    fs.writeFileSync(probe, 'ok');
+    fs.unlinkSync(probe);
+    return absoluteDir;
+}
+
+function pickStorageRoot() {
+    const candidates = [
+        process.env.STORAGE_ROOT,
+        process.env.DATA_DIR,
+        process.env.WORKTAP_DATA_DIR,
+        path.join(__dirname, '.data'),
+        path.join(os.tmpdir(), 'worktap')
+    ].filter(Boolean);
+
+    for (const candidate of candidates) {
+        try {
+            return ensureWritableDir(candidate);
+        } catch (err) {
+            console.warn(`Storage path is not writable: ${path.resolve(candidate)} (${err.message})`);
+        }
+    }
+
+    throw new Error('No writable storage directory found');
+}
+
+const storageRoot = pickStorageRoot();
+const dbPath = path.resolve(process.env.DB_STORAGE || process.env.WORKTAP_DB_PATH || path.join(storageRoot, 'worktap.db'));
+ensureWritableDir(path.dirname(dbPath));
+
+const bundledDbPath = path.join(__dirname, 'worktap.db');
+const shouldCopyBundledDb = (!fs.existsSync(dbPath) || fs.statSync(dbPath).size === 0)
+    && fs.existsSync(bundledDbPath)
+    && path.resolve(bundledDbPath) !== dbPath;
+if (shouldCopyBundledDb) {
+    fs.copyFileSync(bundledDbPath, dbPath);
+    console.log(`SQLite database copied to writable storage: ${dbPath}`);
+}
+
+const uploadRoot = path.resolve(process.env.UPLOAD_ROOT || process.env.WORKTAP_UPLOAD_DIR || path.join(storageRoot, 'uploads'));
+ensureWritableDir(uploadRoot);
+const chatUploadDir = path.join(uploadRoot, 'chat');
 fs.mkdirSync(chatUploadDir, {recursive: true});
 
 function parseWorkImages(images) {
@@ -228,6 +264,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.json({limit: '30mb'}));
 app.use(express.urlencoded({extended: true, limit: '30mb'}));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(uploadRoot));
 // ИЛИ явно для images
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
