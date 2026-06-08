@@ -1,0 +1,93 @@
+<%- include('partials/header', { title: title, currentPath: '/about' }) %>
+
+<style>
+  .info-page {
+    padding: 40px 0 70px;
+  }
+
+  .about-hero {
+    background: white;
+    border: 1px solid #eef2f6;
+    border-radius: 28px;
+    overflow: hidden;
+  }
+
+  .about-hero-image {
+    min-height: 360px;
+    background-image: url('/images/about-hero.png');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .about-content {
+    padding: 34px 38px 40px;
+  }
+
+  .about-content h1 {
+    margin: 0 0 18px;
+    font-size: 42px;
+    line-height: 1.1;
+    color: #222222;
+  }
+
+  .about-content p {
+    margin: 0;
+    max-width: 920px;
+    color: #475569;
+    font-size: 18px;
+    line-height: 1.75;
+  }
+
+  .about-points {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-top: 26px;
+  }
+
+  .about-point {
+    background: #F7F6FF;
+    border-radius: 20px;
+    padding: 18px;
+    font-weight: 700;
+    color: #222222;
+  }
+
+  @media (max-width: 720px) {
+    .about-hero-image {
+      min-height: 240px;
+    }
+
+    .about-content {
+      padding: 26px 22px 30px;
+    }
+
+    .about-content h1 {
+      font-size: 32px;
+    }
+  }
+</style>
+
+<main>
+  <div class="container info-page">
+    <section class="about-hero">
+      <div class="about-hero-image"></div>
+      <div class="about-content">
+        <h1>О нас</h1>
+        <p>
+          WorkTap - онлайн сервис поиска частных специалистов для решения бизнес задач в кратчайшие сроки.
+          Наша платформа объединяет заказчиков услуг, которым необходимо выполнить какую-либо работу, и
+          компетентных специалистов, ищущих подработку или дополнительный заработок.
+        </p>
+
+        <div class="about-points">
+          <div class="about-point">Быстрый поиск исполнителей</div>
+          <div class="about-point">Готовые ворки и заказы на бирже</div>
+          <div class="about-point">Чат, отзывы и безопасная работа</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

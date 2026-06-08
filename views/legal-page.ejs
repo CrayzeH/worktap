@@ -1,0 +1,88 @@
+<%- include('partials/header', { title: title, currentPath: currentPath }) %>
+
+<style>
+  .legal-page {
+    padding: 40px 0 70px;
+  }
+
+  .legal-shell {
+    background: white;
+    border: 1px solid #eef2f6;
+    border-radius: 28px;
+    padding: 34px 38px;
+  }
+
+  .legal-shell h1 {
+    margin: 0 0 12px;
+    color: #222222;
+    font-size: 40px;
+    line-height: 1.15;
+  }
+
+  .legal-lead {
+    color: #5a6a7e;
+    font-size: 17px;
+    line-height: 1.6;
+    margin: 0 0 28px;
+    max-width: 900px;
+  }
+
+  .legal-section {
+    border-top: 1px solid #eef2f6;
+    padding: 20px 0;
+  }
+
+  .legal-section:first-of-type {
+    border-top: none;
+  }
+
+  .legal-section h2 {
+    font-size: 20px;
+    line-height: 1.35;
+    margin: 0 0 10px;
+    color: #222222;
+  }
+
+  .legal-section p {
+    color: #475569;
+    font-size: 15px;
+    line-height: 1.75;
+    margin: 0;
+    white-space: pre-line;
+  }
+
+  @media (max-width: 720px) {
+    .legal-shell {
+      padding: 26px 22px;
+    }
+
+    .legal-shell h1 {
+      font-size: 30px;
+    }
+  }
+</style>
+
+<main>
+  <div class="container legal-page">
+    <article class="legal-shell">
+      <h1><%= pageTitle %></h1>
+      <p class="legal-lead"><%= lead %></p>
+
+      <% (sections || []).forEach((section, index) => { %>
+        <% const match = section.match(/^(\d+\.\s*[^.]+)\.\s*(.*)$/s); %>
+        <section class="legal-section">
+          <% if (match) { %>
+            <h2><%= match[1] %></h2>
+            <p><%= match[2] %></p>
+          <% } else if (index === 0) { %>
+            <p><%= section %></p>
+          <% } else { %>
+            <p><%= section %></p>
+          <% } %>
+        </section>
+      <% }) %>
+    </article>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

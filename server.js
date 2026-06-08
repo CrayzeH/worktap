@@ -167,6 +167,22 @@ function getFavoriteWorkIds(userId) {
     });
 }
 
+function readContentFile(fileName) {
+    try {
+        return fs.readFileSync(path.join(__dirname, 'content', fileName), 'utf8');
+    } catch (err) {
+        console.error(`Content file read error: ${fileName}`, err.message);
+        return '';
+    }
+}
+
+function splitContentSections(content) {
+    return String(content || '')
+        .split(/\r?\n\s*\r?\n/)
+        .map(section => section.trim())
+        .filter(Boolean);
+}
+
 function requireRolePage(req, res, roles) {
     if (!req.session.user) {
         res.redirect('/login');
@@ -715,6 +731,33 @@ app.use(async (req, res, next) => {
 // =====================================================
 
 // Главная страница
+app.get('/about', (req, res) => {
+    res.render('about', {
+        title: 'О нас — Ворк.Тап',
+        currentPath: '/about'
+    });
+});
+
+app.get('/terms', (req, res) => {
+    res.render('legal-page', {
+        title: 'Правила пользования — Ворк.Тап',
+        currentPath: '/terms',
+        pageTitle: 'Правила пользования',
+        lead: 'Правила регулируют отношения между пользователями платформы Ворк.Тап и администрацией сервиса.',
+        sections: splitContentSections(readContentFile('terms.txt'))
+    });
+});
+
+app.get('/privacy', (req, res) => {
+    res.render('legal-page', {
+        title: 'Политика приватности и безопасности — Ворк.Тап',
+        currentPath: '/privacy',
+        pageTitle: 'Политика приватности и безопасности',
+        lead: 'Меры и правила защиты данных пользователей, безопасного взаимодействия и предотвращения мошенничества на платформе.',
+        sections: splitContentSections(readContentFile('privacy.txt'))
+    });
+});
+
 app.get('/', async (req, res) => {
     try {
         const works = await new Promise((resolve) => {
