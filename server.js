@@ -9,8 +9,17 @@ const https = require('https');
 const fetch = require('node-fetch');
 
 const app = express();
-const PORT = 3000;
-const chatUploadDir = path.join(__dirname, 'public', 'uploads', 'chat');
+const PORT = process.env.PORT || 3000;
+const dataDir = process.env.WORKTAP_DATA_DIR
+    ? path.resolve(process.env.WORKTAP_DATA_DIR)
+    : __dirname;
+fs.mkdirSync(dataDir, {recursive: true});
+const dbPath = process.env.WORKTAP_DB_PATH
+    ? path.resolve(process.env.WORKTAP_DB_PATH)
+    : path.join(dataDir, 'worktap.db');
+const chatUploadDir = process.env.WORKTAP_UPLOAD_DIR
+    ? path.resolve(process.env.WORKTAP_UPLOAD_DIR, 'chat')
+    : path.join(__dirname, 'public', 'uploads', 'chat');
 fs.mkdirSync(chatUploadDir, {recursive: true});
 
 function parseWorkImages(images) {
@@ -146,13 +155,15 @@ function requireRoleApi(req, res, roles) {
 }
 
 // Подключение к БД
-const db = new sqlite3.Database('./worktap.db', (err) => {
+const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
     if (err) {
         console.error('Ошибка подключения к БД:', err.message);
+        console.error(`SQLite path: ${dbPath}`);
     } else {
-        console.log('✅ Подключено к SQLite базе данных');
+        console.log(`✅ Подключено к SQLite базе данных: ${dbPath}`);
     }
 });
+db.configure('busyTimeout', 5000);
 
 // Настройка шаблонов
 db.serialize(() => {
@@ -2715,7 +2726,7 @@ app.post('/api/messages', async (req, res) => {
 // Запуск сервера
 app.listen(PORT, () => {
     console.log(`🚀 Сервер запущен на http://localhost:${PORT}`);
-    console.log(`📁 База данных: worktap.db`);
+    console.log(`📁 База данных: ${dbPath}`);
     console.log(`📁 Шаблоны: views/`);
     console.log(`📁 Статика: public/`);
 });
