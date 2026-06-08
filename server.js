@@ -17,6 +17,7 @@ fs.mkdirSync(dataDir, {recursive: true});
 const dbPath = process.env.WORKTAP_DB_PATH
     ? path.resolve(process.env.WORKTAP_DB_PATH)
     : path.join(dataDir, 'worktap.db');
+fs.mkdirSync(path.dirname(dbPath), {recursive: true});
 const chatUploadDir = process.env.WORKTAP_UPLOAD_DIR
     ? path.resolve(process.env.WORKTAP_UPLOAD_DIR, 'chat')
     : path.join(__dirname, 'public', 'uploads', 'chat');
